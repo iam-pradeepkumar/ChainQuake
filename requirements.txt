@@ -13,3 +13,4 @@ python-jose[cryptography]
 firebase-admin
 SQLAlchemy
 passlib[bcrypt]
+psycopg2-binary

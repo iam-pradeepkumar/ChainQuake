@@ -5,7 +5,10 @@ load_dotenv()
 
 class Settings:
     PROJECT_NAME: str = "ChainQuake"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./chainquake.db")
+    _db_url = os.getenv("DATABASE_URL", "sqlite:///./chainquake.db")
+    if _db_url.startswith("postgres://"):
+        _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL: str = _db_url
     SECRET_KEY: str = os.getenv("SECRET_KEY", "chainquake-secret-key-2024")
     ALGORITHM: str = "HS256"
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
