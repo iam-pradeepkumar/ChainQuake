@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: chainquake-platform
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: NEWS_API_KEY
+        value: "demo"
+      - key: FIREBASE_SERVICE_ACCOUNT_PATH
+        value: "/etc/secrets/firebase-key.json"
