@@ -1,5 +1,5 @@
 fastapi
-uvicorn[standard]
+uvicorn
 networkx
 scikit-learn
 numpy
@@ -9,6 +9,5 @@ python-dotenv
 requests
 python-jose[cryptography]
 firebase-admin
-sqlalchemy
-passlib
-websockets
+SQLAlchemy
+passlib[bcrypt]
