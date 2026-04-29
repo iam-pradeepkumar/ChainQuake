@@ -32,6 +32,8 @@ export const chatApi = {
 export const authApi = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
+  googleAuth: (token) => api.post('/auth/google', null, { headers: { Authorization: `Bearer ${token}` } }),
+  getUsers: () => api.get('/auth/users'),
 };
 
 export const healthApi = {

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Zap, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { signInWithGoogle } from '../firebase';
+import { doc, setDoc, getDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function AuthPage({ onAuthSuccess, onBack }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -10,6 +12,44 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  /**
+   * Save/update user profile in Firestore 'users' collection
+   */
+  const saveUserToFirestore = async (user) => {
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        // Update existing user — bump login count and last_login
+        await setDoc(userRef, {
+          last_login: serverTimestamp(),
+          login_count: increment(1)
+        }, { merge: true });
+        console.log('Firestore: Updated existing user', user.uid);
+      } else {
+        // Create new user document
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || user.email?.split('@')[0] || 'Operator',
+          photoURL: user.photoURL || null,
+          provider: user.providerData?.[0]?.providerId || 'unknown',
+          role: 'operator',
+          status: 'active',
+          created_at: serverTimestamp(),
+          last_login: serverTimestamp(),
+          login_count: 1
+        });
+        console.log('Firestore: Created new user', user.uid);
+      }
+      return true;
+    } catch (err) {
+      console.error('Firestore: Failed to save user data:', err);
+      return false;
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
@@ -17,6 +57,9 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
       const user = await signInWithGoogle();
       const token = await user.getIdToken();
       
+      // Persist user data to Firestore
+      await saveUserToFirestore(user);
+
       const userData = {
         uid: user.uid,
         email: user.email,
@@ -29,18 +72,53 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
       onAuthSuccess(userData);
     } catch (err) {
       console.error("Auth Error:", err);
-      setError('Google Authentication failed.');
+      setError('Google Authentication failed. Please try again.');
     }
     setLoading(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simplified email/pass flow for hackathon, usually would hit backend
-    const mockUser = { uid: '123', email, displayName: fullName || email.split('@')[0] };
-    localStorage.setItem('token', 'mock-token');
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    onAuthSuccess(mockUser);
+    setLoading(true);
+    setError('');
+    try {
+      const uid = email.replace('@', '_at_').replace(/\./g, '_');
+      const userDoc = {
+        uid,
+        email,
+        displayName: fullName || email.split('@')[0],
+        photoURL: null
+      };
+
+      // Save to Firestore
+      const userRef = doc(db, 'users', uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        await setDoc(userRef, {
+          last_login: serverTimestamp(),
+          login_count: increment(1)
+        }, { merge: true });
+      } else {
+        await setDoc(userRef, {
+          ...userDoc,
+          provider: 'email',
+          role: 'operator',
+          status: 'active',
+          created_at: serverTimestamp(),
+          last_login: serverTimestamp(),
+          login_count: 1
+        });
+      }
+
+      localStorage.setItem('token', 'email-auth-token');
+      localStorage.setItem('user', JSON.stringify(userDoc));
+      onAuthSuccess(userDoc);
+    } catch (err) {
+      console.error("Email Auth Error:", err);
+      setError('Authentication failed. Please check your credentials.');
+    }
+    setLoading(false);
   };
 
   return (

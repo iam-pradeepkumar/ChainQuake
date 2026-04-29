@@ -64,6 +64,44 @@ class GraphEngine:
         data["customers"] = list(self.graph.successors(node_id))
         return data
 
+    def get_by_city(self, cities):
+        """Get all node IDs that belong to any of the given cities"""
+        if isinstance(cities, str):
+            cities = [cities]
+        result = []
+        for nid, data in self.graph.nodes(data=True):
+            if data.get("city") in cities:
+                result.append(nid)
+        return result
+
+    def find_alternates(self, node_id):
+        """Find alternate nodes of the same type that could replace a failed node"""
+        if node_id not in self.graph.nodes:
+            return []
+        failed_node = self.graph.nodes[node_id]
+        node_type = failed_node.get("type", "")
+        sector = failed_node.get("sector", "")
+        
+        alternates = []
+        for nid, data in self.graph.nodes(data=True):
+            if nid == node_id:
+                continue
+            if data.get("type") == node_type:
+                score = 0.5
+                if data.get("sector") == sector:
+                    score += 0.3
+                if data.get("status") == "operational":
+                    score += 0.2
+                alternates.append({
+                    "id": nid,
+                    "name": data.get("name", nid),
+                    "city": data.get("city", "Unknown"),
+                    "compatibility": round(score, 2)
+                })
+        
+        alternates.sort(key=lambda x: x["compatibility"], reverse=True)
+        return alternates
+
     def propagate_risk(self, node_id, impact=0.7, depth=0, max_depth=5, visited=None):
         if visited is None: visited = set()
         if depth >= max_depth or node_id in visited: return []
@@ -84,7 +122,13 @@ class GraphEngine:
                 })
             except: pass
 
-        affected.append({"id": node_id, "name": nd["name"], "risk_score": nd["current_risk"], "status": nd["status"]})
+        affected.append({
+            "id": node_id,
+            "name": nd["name"],
+            "risk_score": nd["current_risk"],
+            "status": nd["status"],
+            "depth": depth
+        })
         for succ in self.graph.successors(node_id):
             cascading = impact * 0.6
             if cascading > 0.05:
