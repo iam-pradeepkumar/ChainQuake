@@ -1,0 +1,208 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg-deep: #050508;
+  --bg-surface: #0c0c10;
+  --bg-card: #12121a;
+  /* DARK THEME (Default) */
+  --bg-obsidian: #000000;
+  --bg-surface: #0e0e0e;
+  --accent-purple: #7c3aed;
+  --accent-gold: #facc15;
+  --text-primary: #ffffff;
+  --text-muted: #94a3b8;
+  --border-radius: 32px;
+  --glass-blur: blur(20px);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --shadow-hard: 6px 6px 0px #000000;
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.08);
+  --map-filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+[data-theme='light'] {
+  --bg-obsidian: #f8fafc;
+  --bg-surface: #ffffff;
+  --accent-purple: #6366f1;
+  --accent-gold: #f59e0b;
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --shadow-hard: 6px 6px 0px #0f172a;
+  --border-subtle: 1px solid #e2e8f0;
+  --map-filter: none;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-obsidian);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.satellite-dark {
+  filter: brightness(0.5) contrast(1.1);
+}
+
+.satellite-light {
+  filter: brightness(0.9) contrast(1.1);
+}
+
+.leaflet-container {
+  background: #000 !important;
+}
+
+.grit-card {
+  background: var(--bg-surface);
+  border: var(--border-subtle);
+  border-radius: var(--border-radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: var(--glass-blur);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
+}
+
+.grit-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent-purple);
+}
+
+.neubrutal {
+  background: var(--accent-gold);
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  border-radius: 12px;
+  font-weight: 800;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.pill-button {
+  border-radius: 50px;
+  padding: 12px 28px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.purple-gradient {
+  background: linear-gradient(135deg, var(--accent-purple) 0%, #4c1d95 100%);
+  color: white;
+}
+
+.purple-gradient:hover {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+  transform: scale(1.02);
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, var(--accent-gold) 0%, #b45309 100%);
+  color: #000;
+}
+
+.glass-nav {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: var(--border-subtle);
+  border-radius: 100px;
+  margin: 20px auto;
+  max-width: 1200px;
+  padding: 10px 30px;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* === GLASS CARD === */
+.glass-card {
+  background: linear-gradient(135deg, rgba(18, 18, 26, 0.9), rgba(12, 12, 16, 0.95));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+}
+.glass-card:hover {
+  border-color: var(--border-bright);
+  box-shadow: var(--shadow-card), var(--shadow-glow-blue);
+}
+
+/* === BUTTONS === */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px;
+  cursor: pointer; border: none; transition: var(--transition);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+  color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+.btn-danger {
+  background: linear-gradient(135deg, var(--accent-red), #dc2626);
+  color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
+.btn-ghost {
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+/* === STATUS BADGES === */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.badge-critical { background: var(--accent-red-dim); color: var(--accent-red); }
+.badge-high { background: var(--accent-amber-dim); color: var(--accent-amber); }
+.badge-medium { background: var(--accent-blue-dim); color: var(--accent-blue); }
+.badge-low { background: var(--accent-green-dim); color: var(--accent-green); }
+.badge-safe { background: var(--accent-green-dim); color: var(--accent-green); }
+
+/* === PULSE ANIMATION === */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--accent-blue); } 50% { box-shadow: 0 0 20px var(--accent-blue); } }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ripple { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
+
+.animate-slide-in { animation: slideIn 0.4s ease-out forwards; }
+.animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+.pulse-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* === MONO TEXT === */
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* === TOOLTIP === */
+.tooltip-container { position: relative; }
+.tooltip {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: var(--bg-elevated); border: 1px solid var(--border-bright);
+  padding: 6px 12px; border-radius: var(--radius-sm);
+  font-size: 12px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.2s;
+}
+.tooltip-container:hover .tooltip { opacity: 1; }
