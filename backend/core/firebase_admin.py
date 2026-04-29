@@ -10,7 +10,11 @@ def init_firebase():
     try:
         # Check if already initialized
         firebase_admin.get_app()
+        return firestore.client()
     except ValueError:
+        pass
+
+    try:
         cert_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
         if cert_path and os.path.exists(cert_path):
             cred = credentials.Certificate(cert_path)
@@ -18,8 +22,10 @@ def init_firebase():
         else:
             # Fallback for simplified testing or if project_id is enough
             firebase_admin.initialize_app()
-    
-    return firestore.client()
+        return firestore.client()
+    except Exception as e:
+        print(f"🔥 FIREBASE ADMIN ERROR: Failed to initialize. Check FIREBASE_SERVICE_ACCOUNT_PATH secret file! Error: {e}")
+        return None
 
 db_firestore = init_firebase()
 
