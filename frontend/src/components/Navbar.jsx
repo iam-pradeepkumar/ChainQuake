@@ -90,7 +90,7 @@ export default function Navbar({ user, onLogout, onSearch, theme, setTheme }) {
               <User size={18} color="var(--accent-purple)" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>{user?.username || 'Analyst'}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1 }}>{user?.displayName || user?.email?.split('@')[0] || 'Operator'}</span>
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Command Level</span>
             </div>
           </div>

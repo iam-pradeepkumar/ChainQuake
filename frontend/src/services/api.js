@@ -14,6 +14,10 @@ export const riskApi = {
 
 export const alertsApi = {
   getAll: () => api.get('/alerts'),
+  refresh: () => api.get('/alerts/refresh'),
+  notifyEmail: (data) => api.post('/alerts/notify/email', data),
+  notifyPhone: (data) => api.post('/alerts/notify/phone', data),
+  notifyStatus: () => api.get('/alerts/notify/status'),
 };
 
 export const newsApi = {

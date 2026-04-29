@@ -3,26 +3,40 @@ import { TrendingUp, AlertTriangle, Shield, Activity, ArrowUp, ArrowDown } from 
 
 export default function KPICards({ health }) {
   const h = health || {};
+  const healthScore = h.health_score ?? 0;
+  const critical = h.critical ?? 0;
+  const atRisk = h.at_risk ?? 0;
+  const operational = h.operational ?? 0;
+  const avgRisk = h.avg_risk ?? 0;
+  const totalNodes = critical + atRisk + operational;
+
   const kpis = [
     {
-      label: 'Network Integrity', value: `${h.health_score || 87}%`,
+      label: 'Network Integrity', value: `${healthScore}%`,
       icon: Shield, color: 'var(--accent-purple)',
-      trend: h.health_score >= 80 ? 'Optimal' : 'Compromised', trendUp: h.health_score >= 80,
+      trend: healthScore >= 80 ? 'Optimal' : (healthScore >= 50 ? 'Degraded' : 'Compromised'),
+      trendUp: healthScore >= 80,
+      delta: healthScore >= 80 ? `+${(healthScore - 80).toFixed(1)}%` : `-${(80 - healthScore).toFixed(1)}%`
     },
     {
-      label: 'Threat Vectors', value: `${(h.critical || 0) + (h.at_risk || 0)}`,
+      label: 'Threat Vectors', value: `${critical + atRisk}`,
       icon: AlertTriangle, color: 'var(--accent-gold)',
-      trend: `${h.critical || 0} Critical Alerts`, trendUp: false,
+      trend: `${critical} Critical / ${atRisk} Elevated`, trendUp: critical === 0,
+      delta: critical > 0 ? `${critical} active` : 'Clear'
     },
     {
-      label: 'Operational Nodes', value: `${h.total_nodes || 30}`,
+      label: 'Operational Nodes', value: `${totalNodes}`,
       icon: Activity, color: '#3b82f6',
-      trend: `${h.operational || 30} Active Assets`, trendUp: true,
+      trend: `${operational} Active / ${totalNodes} Total`,
+      trendUp: operational >= totalNodes * 0.8,
+      delta: totalNodes > 0 ? `${((operational / totalNodes) * 100).toFixed(0)}% uptime` : '—'
     },
     {
-      label: 'System Risk Index', value: `${((h.avg_risk || 0.13) * 100).toFixed(1)}%`,
+      label: 'System Risk Index', value: `${(avgRisk * 100).toFixed(1)}%`,
       icon: TrendingUp, color: 'var(--accent-purple)',
-      trend: 'Propagating Alerts', trendUp: (h.avg_risk || 0) < 0.3,
+      trend: avgRisk < 0.2 ? 'Nominal' : (avgRisk < 0.5 ? 'Elevated' : 'Critical'),
+      trendUp: avgRisk < 0.3,
+      delta: avgRisk < 0.3 ? 'Stable' : 'Escalating'
     },
   ];
 
@@ -39,12 +53,12 @@ export default function KPICards({ health }) {
             }}>
               <kpi.icon size={22} color={kpi.color} />
             </div>
-            <div style={{ 
-              background: kpi.trendUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-              padding: '4px 10px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 4 
+            <div style={{
+              background: kpi.trendUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              padding: '4px 10px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 4
             }}>
               {kpi.trendUp ? <ArrowUp size={12} color="#10b981" /> : <ArrowDown size={12} color="#ef4444" />}
-              <span style={{ fontSize: 10, fontWeight: 800, color: kpi.trendUp ? '#10b981' : '#ef4444' }}>{kpi.trendUp ? '+2.4%' : '-1.2%'}</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: kpi.trendUp ? '#10b981' : '#ef4444' }}>{kpi.delta}</span>
             </div>
           </div>
           <div style={{ fontSize: 32, fontWeight: 950, color: 'var(--text-primary)', marginBottom: 4 }}>{kpi.value}</div>
