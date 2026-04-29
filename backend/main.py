@@ -10,17 +10,13 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-
 from backend.api import companies, dependencies, alerts, risk, simulate, news, chat, auth
-from backend.core.database import init_db
 
 app = FastAPI(title="ChainQuake API", version="1.2.0", description="Autonomous Intelligence & Real-Time Orchestration")
 
 # Database Initialization on Startup
 @app.on_event("startup")
 async def startup_event():
-    init_db()
-    # Seed DB if empty — logic handled in init_db or separate script
     print("CHAINQUAKE: System operational. Real-time intelligence engine active.")
 
 # CORS

@@ -1,9 +1,8 @@
 """
-Graph Engine - Neural Network Mapping using NetworkX and Google Firestore
+Graph Engine - Neural Network Mapping using Google Firestore
 """
 import networkx as nx
 import os
-from backend.core.database import SessionLocal, Node, Edge
 try:
     from backend.core.firebase_admin import db_firestore
     USE_FIRESTORE = True
@@ -22,9 +21,9 @@ class GraphEngine:
                 self._sync_with_firestore()
                 return
             except Exception as e:
-                print(f"GRAPH ENGINE: Firestore Sync Failed ({e}). Falling back to SQL.")
-        
-        self._sync_with_sql()
+                print(f"GRAPH ENGINE: Firestore Sync Failed ({e}).")
+        else:
+            print("GRAPH ENGINE: FIRESTORE NOT INITIALIZED.")
 
     def _sync_with_firestore(self):
         nodes_ref = db_firestore.collection('nodes').stream()
@@ -46,25 +45,6 @@ class GraphEngine:
             edge_count += 1
             
         print(f"GRAPH ENGINE: Synchronized {node_count} nodes and {edge_count} links from FIRESTORE.")
-
-    def _sync_with_sql(self):
-        db = SessionLocal()
-        try:
-            nodes = db.query(Node).all()
-            edges = db.query(Edge).all()
-            self.graph.clear()
-            for n in nodes:
-                self.graph.add_node(
-                    n.id, name=n.name, type=n.type,
-                    city=n.city, lat=n.lat, lng=n.lng,
-                    base_risk=n.base_risk, current_risk=n.current_risk,
-                    status=n.status, **(n.metadata_json or {})
-                )
-            for e in edges:
-                self.graph.add_edge(e.source, e.target, latency=e.latency)
-            print(f"GRAPH ENGINE: Synchronized {len(nodes)} nodes from SQL.")
-        finally:
-            db.close()
 
     def get_all_nodes(self):
         return [{"id": nid, **data} for nid, data in self.graph.nodes(data=True)]
@@ -103,15 +83,6 @@ class GraphEngine:
                     "status": nd["status"]
                 })
             except: pass
-        else:
-            db = SessionLocal()
-            try:
-                db_node = db.query(Node).filter(Node.id == node_id).first()
-                if db_node:
-                    db_node.current_risk = nd["current_risk"]
-                    db_node.status = nd["status"]
-                    db.commit()
-            finally: db.close()
 
         affected.append({"id": node_id, "name": nd["name"], "risk_score": nd["current_risk"], "status": nd["status"]})
         for succ in self.graph.successors(node_id):
@@ -127,12 +98,6 @@ class GraphEngine:
             if USE_FIRESTORE:
                 try: db_firestore.collection('nodes').document(nid).update({"current_risk": self.graph.nodes[nid]["base_risk"], "status": "operational"})
                 except: pass
-        if not USE_FIRESTORE:
-            db = SessionLocal()
-            try:
-                db.query(Node).update({"current_risk": Node.base_risk, "status": "operational"})
-                db.commit()
-            finally: db.close()
 
     def get_health(self):
         nodes = list(self.graph.nodes(data=True))
