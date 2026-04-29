@@ -20,9 +20,22 @@ export default function SimulationPanel({ onSimulate, onReset, simResult, loadin
           <Zap size={22} color="var(--accent-gold)" fill="var(--accent-gold)" />
           <span style={{ fontSize: 16, fontWeight: 950, color: 'var(--text-primary)', letterSpacing: 1 }}>CRISIS SIMULATOR</span>
         </div>
-        <button onClick={onReset} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800 }}>
-          <RotateCcw size={14} /> RESET
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={async () => {
+            if(window.confirm("This will overwrite current network data with real Tamil Nadu assets. Proceed?")) {
+              try {
+                const { riskApi } = await import('../services/api');
+                await riskApi.reseed();
+                window.location.reload();
+              } catch(e) { alert("Sync failed: " + e.message); }
+            }
+          }} style={{ background: 'none', border: 'none', color: 'var(--accent-purple)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800 }}>
+             SYNC REAL DATA
+          </button>
+          <button onClick={onReset} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800 }}>
+            <RotateCcw size={14} /> RESET
+          </button>
+        </div>
       </div>
 
       {/* Event Types Grid */}

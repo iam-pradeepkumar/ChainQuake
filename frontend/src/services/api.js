@@ -10,6 +10,7 @@ export const companiesApi = {
 export const riskApi = {
   getData: () => api.get('/risk'),
   getGraph: () => api.get('/risk/graph'),
+  reseed: () => api.post('/risk/reseed'),
 };
 
 export const alertsApi = {

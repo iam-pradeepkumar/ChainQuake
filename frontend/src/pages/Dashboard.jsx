@@ -221,6 +221,11 @@ export default function Dashboard({ user, onLogout }) {
               </div>
 
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24 }}>
+                <h4 style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, letterSpacing: 1 }}>ASSET DOSSIER</h4>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 24, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  {selectedNode?.description || "Strategic asset monitoring active. No classified dossier available for this node."}
+                </div>
+                
                 <h4 style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, letterSpacing: 1 }}>ASSET INTELLIGENCE</h4>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

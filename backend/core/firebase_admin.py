@@ -68,7 +68,8 @@ def _seed_if_empty(db):
                     "base_risk": c["base_risk"],
                     "current_risk": c["base_risk"],
                     "status": "operational",
-                    "sector": c["sector"]
+                    "sector": c["sector"],
+                    "description": c.get("description", "")
                 })
             
             # Seed Edges
