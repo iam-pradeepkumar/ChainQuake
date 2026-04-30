@@ -42,23 +42,24 @@ async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTas
         location=req.location, custom_event=req.custom_event
     )
     
-    critical_nodes = [n for n in result.get("affected_nodes", []) if n["status"] == "critical"]
+    affected_nodes = result.get("affected_nodes", [])
     
     # 2. Add alerts to store (In-memory)
-    for node in result.get("affected_nodes", []):
+    for node in affected_nodes:
         if node["status"] == "critical":
             add_alert("critical", f"SIMULATION: {node['name']} risk at {node['risk_score']*100:.0f}%", node["id"])
         elif node["status"] == "at_risk":
             add_alert("high", f"SIMULATION: {node['name']} showing elevated risk", node["id"])
 
     # 3. Queue Notifications and DB Persistence as Background Tasks
-    if critical_nodes and (req.notify_email or req.notify_phone):
+    if affected_nodes and (req.notify_email or req.notify_phone):
+        print(f"SIMULATION: Triggering automatic alerts for {len(affected_nodes)} nodes. Target: {req.notify_email}")
         background_tasks.add_task(
             _dispatch_notifications, 
             req.notify_email, 
             req.notify_phone, 
             result['event'], 
-            critical_nodes
+            affected_nodes
         )
 
     # 4. Broadcast update (WS)

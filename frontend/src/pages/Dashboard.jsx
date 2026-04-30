@@ -222,94 +222,155 @@ export default function Dashboard({ user, onLogout }) {
           </div>
         </div>
 
-        {/* Node Detail Intelligence Sidebar (GRIT STYLE) */}
+        {/* Node Detail Intelligence Sidebar (RIGHT SIDE) */}
         {selectedNode && (
-          <div className="grit-card animate-slide-in" style={{
-            position: 'fixed', top: 110, left: 30, width: 440, 
-            height: 'calc(100vh - 140px)', zIndex: 2000, 
+          <div className="grit-card animate-fade-in" style={{
+            position: 'fixed', top: 100, right: 24, width: 440, 
+            height: 'calc(100vh - 124px)', zIndex: 2000, 
             padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column',
             background: 'var(--bg-surface)', border: '2px solid var(--accent-purple)',
-            boxShadow: '0 0 80px rgba(0,0,0,0.2)'
+            boxShadow: '-20px 0 80px rgba(0,0,0,0.5)',
+            borderRadius: '24px'
           }}>
-            {/* Header / Image Placeholder */}
-            <div style={{ height: 200, background: `linear-gradient(135deg, ${selectedNode?.status === 'critical' ? '#450a0a' : 'var(--accent-purple)'} 0%, var(--bg-obsidian) 100%)`, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <button onClick={() => setSelectedNode(null)} style={{ position: 'absolute', top: 15, right: 15, background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: 30, height: 30, borderRadius: '50%', cursor: 'pointer', zIndex: 10 }}>×</button>
+            {/* Header */}
+            <div style={{ 
+              height: 180, 
+              background: `linear-gradient(135deg, ${selectedNode?.status === 'critical' ? '#450a0a' : '#1e1b4b'} 0%, var(--bg-obsidian) 100%)`, 
+              position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderBottom: '1px solid rgba(255,255,255,0.05)'
+            }}>
+              <button 
+                onClick={() => setSelectedNode(null)} 
+                style={{ 
+                  position: 'absolute', top: 20, right: 20, background: 'rgba(0,0,0,0.4)', 
+                  border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: 32, height: 32, 
+                  borderRadius: '50%', cursor: 'pointer', zIndex: 10, display: 'flex', 
+                  alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 300 
+                }}
+              >
+                ×
+              </button>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', border: 'var(--border-subtle)' }}>
-                   <Compass size={40} color={selectedNode?.status === 'critical' ? '#ef4444' : (theme === 'dark' ? 'white' : 'var(--accent-purple)')} />
+                <div style={{ 
+                  width: 70, height: 70, background: 'rgba(255,255,255,0.03)', 
+                  borderRadius: '50%', display: 'flex', alignItems: 'center', 
+                  justifyContent: 'center', margin: '0 auto 12px', border: '1px solid rgba(255,255,255,0.08)' 
+                }}>
+                   <Compass size={32} color={selectedNode?.status === 'critical' ? '#ef4444' : '#818cf8'} />
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2 }}>{`Intelligence ID: TN-${selectedNode?.id?.toString().padStart(4, '0') || '0000'}`}</div>
+                <div style={{ 
+                  fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 800, 
+                  textTransform: 'uppercase', letterSpacing: 3 
+                }}>
+                  {`ID: TN-${selectedNode?.id?.toString().padStart(4, '0') || '0000'}`}
+                </div>
               </div>
-              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(transparent, var(--bg-surface))' }} />
             </div>
 
-            <div style={{ padding: '0 24px 24px', flex: 1, overflowY: 'auto', color: 'var(--text-primary)' }}>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 26, fontWeight: 950, color: 'var(--text-primary)', marginBottom: 4, lineHeight: 1.1 }}>{selectedNode?.name || 'Unknown Asset'}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ background: selectedNode?.status === 'critical' ? '#ef4444' : '#10b981', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 900, color: 'white' }}>{(selectedNode?.status || 'UNKNOWN').toUpperCase()}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 600 }}>{selectedNode?.city || 'Tamil Nadu'}, India</div>
+            <div style={{ padding: '32px', flex: 1, overflowY: 'auto', color: 'var(--text-primary)', scrollbarWidth: 'none' }}>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 28, fontWeight: 950, color: '#fff', marginBottom: 8, lineHeight: 1.1, letterSpacing: '-0.5px' }}>
+                  {selectedNode?.name || 'Unknown Asset'}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ 
+                    background: selectedNode?.status === 'critical' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.1)', 
+                    border: `1px solid ${selectedNode?.status === 'critical' ? '#ef4444' : '#10b981'}`,
+                    padding: '4px 12px', borderRadius: 20, fontSize: 10, fontWeight: 900, 
+                    color: selectedNode?.status === 'critical' ? '#ef4444' : '#10b981',
+                    textTransform: 'uppercase'
+                  }}>
+                    {selectedNode?.status || 'UNKNOWN'}
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600 }}>
+                    {selectedNode?.city || 'Tamil Nadu'}, IN
+                  </div>
                 </div>
               </div>
 
               {/* Action Bar */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 30 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 40 }}>
                 {[
                   { icon: Navigation, label: 'Route', type: 'route' },
                   { icon: Info, label: 'Logs', type: 'logs' },
                   { icon: AlertTriangle, label: 'Audit', type: 'audit' },
                   { icon: Compass, label: 'Share', type: 'share' }
                 ].map((item, i) => (
-                  <button key={i} onClick={() => handleAction(item.type, item.label)} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-                      <item.icon size={18} />
+                  <button 
+                    key={i} onClick={() => handleAction(item.type, item.label)} 
+                    style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                  >
+                    <div style={{ 
+                      width: 44, height: 44, borderRadius: 12, 
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8',
+                      transition: 'all 0.2s'
+                    }}>
+                      <item.icon size={20} />
                     </div>
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700 }}>{item.label}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 800 }}>{item.label}</span>
                   </button>
                 ))}
               </div>
 
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24 }}>
-                <h4 style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, letterSpacing: 1 }}>ASSET DOSSIER</h4>
-                <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 24, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  {selectedNode?.description || "Strategic asset monitoring active. No classified dossier available for this node."}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                <div>
+                  <h4 style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: 16, letterSpacing: 2 }}>ASSET DOSSIER</h4>
+                  <div style={{ 
+                    fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, 
+                    padding: 20, background: 'rgba(255,255,255,0.02)', 
+                    borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' 
+                  }}>
+                    {selectedNode?.description || "Strategic intelligence monitoring active. Autonomous asset verification in progress."}
+                  </div>
                 </div>
                 
-                <h4 style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, letterSpacing: 1 }}>ASSET INTELLIGENCE</h4>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {[
-                    { label: 'Operational Sector', value: selectedNode?.sector, icon: '🏭' },
-                    { label: 'Supply Tier', value: selectedNode?.type, icon: '📦' },
-                    { label: 'Geographical Coordinates', value: `${selectedNode?.lat?.toFixed(4) || 0}, ${selectedNode?.lng?.toFixed(4) || 0}`, icon: '📍' },
-                    { label: 'Base Risk Profile', value: `${((selectedNode?.base_risk || 0) * 100).toFixed(1)}%`, icon: '📊' }
-                  ].map((info, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                      <div style={{ fontSize: 18 }}>{info.icon}</div>
-                      <div>
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>{info.label}</div>
-                        <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 600, textTransform: 'capitalize' }}>{info.value || 'N/A'}</div>
+                <div>
+                  <h4 style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: 20, letterSpacing: 2 }}>ASSET INTELLIGENCE</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {[
+                      { label: 'Operational Sector', value: selectedNode?.sector, icon: '🏭' },
+                      { label: 'Supply Tier', value: selectedNode?.type, icon: '📦' },
+                      { label: 'Coordinates', value: `${selectedNode?.lat?.toFixed(4) || 0}, ${selectedNode?.lng?.toFixed(4) || 0}`, icon: '📍' },
+                      { label: 'Base Risk Profile', value: `${((selectedNode?.base_risk || 0) * 100).toFixed(1)}%`, icon: '📊' }
+                    ].map((info, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                        <div style={{ 
+                          width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.03)', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 
+                        }}>
+                          {info.icon}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>{info.label}</div>
+                          <div style={{ fontSize: 15, color: '#fff', fontWeight: 600 }}>{info.value || 'N/A'}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginTop: 32, padding: 20, background: 'var(--glass-bg)', borderRadius: 16, border: 'var(--border-subtle)' }}>
-                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-primary)' }}>RISK TRAJECTORY</span>
-                    <span style={{ fontSize: 11, fontWeight: 900, color: (selectedNode?.risk || 0) > 0.7 ? '#ef4444' : '#3b82f6' }}>
-                      {((selectedNode?.risk || 0) * 100).toFixed(1)}%
-                    </span>
-                 </div>
-                 <div style={{ height: 60, display: 'flex', alignItems: 'flex-end', gap: 3, marginBottom: 16 }}>
-                    {[0.2, 0.4, 0.3, 0.5, 0.4, 0.6, (selectedNode?.risk || 0)].map((val, idx) => (
-                      <div key={idx} style={{ flex: 1, height: `${val * 100}%`, background: idx === 6 ? (selectedNode?.status === 'critical' ? '#ef4444' : '#3b82f6') : 'var(--border-subtle)', borderRadius: '2px 2px 0 0' }} />
                     ))}
-                 </div>
-                 <button onClick={() => handleAction('mitigation')} style={{ width: '100%', padding: '12px', background: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)' }}>
-                    GENERATE MITIGATION PLAN
-                 </button>
+                  </div>
+                </div>
+
+                <div style={{ padding: 24, background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, transparent 100%)', borderRadius: 20, border: '1px solid rgba(124, 58, 237, 0.1)' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', letterSpacing: 1 }}>RISK TRAJECTORY</span>
+                      <span style={{ fontSize: 12, fontWeight: 950, color: (selectedNode?.current_risk || 0) > 0.6 ? '#ef4444' : '#3b82f6' }}>
+                        {((selectedNode?.current_risk || 0) * 100).toFixed(1)}%
+                      </span>
+                   </div>
+                   <div style={{ height: 60, display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 24 }}>
+                      {[0.2, 0.4, 0.3, 0.5, 0.4, 0.6, (selectedNode?.current_risk || 0)].map((val, idx) => (
+                        <div key={idx} style={{ flex: 1, height: `${Math.max(10, val * 100)}%`, background: idx === 6 ? (selectedNode?.status === 'critical' ? '#ef4444' : '#818cf8') : 'rgba(255,255,255,0.05)', borderRadius: '4px 4px 2px 2px' }} />
+                      ))}
+                   </div>
+                   <button onClick={() => handleAction('mitigation')} style={{ 
+                     width: '100%', padding: '16px', background: 'linear-gradient(135deg, #7c3aed, #3b82f6)', 
+                     color: 'white', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 900, 
+                     cursor: 'pointer', boxShadow: '0 8px 25px rgba(124, 58, 237, 0.3)',
+                     letterSpacing: 1
+                   }}>
+                      GENERATE MITIGATION PLAN
+                   </button>
+                </div>
               </div>
             </div>
           </div>
