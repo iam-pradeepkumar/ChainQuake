@@ -1,5 +1,6 @@
 """
 Simulation Engine - What-if scenarios and self-healing
+Optimized for batch processing.
 """
 from backend.core.seed_data import DISRUPTION_TEMPLATES
 import random, copy
@@ -10,7 +11,8 @@ class SimulationEngine:
         self.history = []
 
     def run_disruption(self, graph_engine, event_type=None, location=None, custom_event=None):
-        """Run a disruption simulation"""
+        """Run a disruption simulation using optimized batch propagation"""
+        # We don't reset inside here anymore if we want to layer, but usually we do
         graph_engine.reset_risks()
 
         if custom_event:
@@ -26,27 +28,18 @@ class SimulationEngine:
             template = random.choice(DISRUPTION_TEMPLATES)
 
         affected_node_ids = graph_engine.get_by_city(template["affected_cities"])
-        all_affected = []
-        for nid in affected_node_ids:
-            result = graph_engine.propagate_risk(nid, template["impact_factor"])
-            all_affected.extend(result)
-
-        # Deduplicate
-        seen = set()
-        unique = []
-        for a in all_affected:
-            if a["id"] not in seen:
-                seen.add(a["id"])
-                unique.append(a)
+        
+        # USE THE NEW BATCH SIMULATOR
+        unique_affected = graph_engine.run_batch_simulation(affected_node_ids, template["impact_factor"])
 
         health = graph_engine.get_health()
-        timeline = self._build_timeline(unique, template)
+        timeline = self._build_timeline(unique_affected, template)
 
         record = {
             "event": template["event"], "type": template.get("type", "custom"),
             "severity": template["severity"],
             "affected_cities": template["affected_cities"],
-            "affected_nodes": unique, "health_after": health, "timeline": timeline
+            "affected_nodes": unique_affected, "health_after": health, "timeline": timeline
         }
         self.history.append(record)
         return record

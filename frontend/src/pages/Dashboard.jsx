@@ -152,6 +152,22 @@ export default function Dashboard({ user, onLogout }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-obsidian)' }}>
+      {/* Tactical Loading Overlay */}
+      {(!graphData.nodes.length || simLoading) && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(5,5,5,0.8)', 
+          backdropFilter: 'blur(20px)', zIndex: 9999, display: 'flex', 
+          flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20
+        }}>
+          <div className="neural-loader"></div>
+          <div style={{ color: 'var(--accent-blue)', fontSize: 14, fontWeight: 900, letterSpacing: 4, animation: 'pulse 2s infinite' }}>
+            SYNCING NEURAL NETWORK...
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 700 }}>
+            {simLoading ? 'EXECUTING CASSETTE PROPAGATION' : 'ESTABLISHING TACTICAL UPLINK'}
+          </div>
+        </div>
+      )}
       <Navbar 
         user={user} 
         onLogout={onLogout} 

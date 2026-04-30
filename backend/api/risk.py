@@ -25,16 +25,28 @@ async def reseed_database():
     from backend.core.seed_data import COMPANIES, DEPENDENCIES
     from backend.services.graph_engine import graph_engine
     
-    # 1. Clear existing
+    # 1. Clear existing in batches
+    batch = db_firestore.batch()
     nodes = db_firestore.collection('nodes').stream()
-    for doc in nodes: doc.reference.delete()
+    node_count = 0
+    for doc in nodes: 
+        batch.delete(doc.reference)
+        node_count += 1
     
     edges = db_firestore.collection('edges').stream()
-    for doc in edges: doc.reference.delete()
+    edge_count = 0
+    for doc in edges: 
+        batch.delete(doc.reference)
+        edge_count += 1
     
-    # 2. Seed Nodes
+    if node_count > 0 or edge_count > 0:
+        batch.commit()
+    
+    # 2. Seed Nodes in a single batch
+    batch = db_firestore.batch()
     for c in COMPANIES:
-        db_firestore.collection('nodes').document(c["id"]).set({
+        node_ref = db_firestore.collection('nodes').document(c["id"])
+        batch.set(node_ref, {
             "name": c["name"],
             "type": c["type"],
             "city": c["city"],
@@ -47,15 +59,18 @@ async def reseed_database():
             "description": c.get("description", "")
         })
     
-    # 3. Seed Edges
+    # 3. Seed Edges in a single batch
     for idx, (source, target, strength) in enumerate(DEPENDENCIES):
-        db_firestore.collection('edges').document(f"edge_{idx}").set({
+        edge_ref = db_firestore.collection('edges').document(f"edge_{idx}")
+        batch.set(edge_ref, {
             "source": source,
             "target": target,
             "latency": strength * 20
         })
     
+    batch.commit()
+    
     # 4. Sync graph engine
     graph_engine.sync_with_db()
     
-    return {"status": "success", "message": f"Re-seeded {len(COMPANIES)} nodes and {len(DEPENDENCIES)} edges with real data."}
+    return {"status": "success", "message": f"Re-seeded {len(COMPANIES)} nodes and {len(DEPENDENCIES)} edges in optimized batches."}

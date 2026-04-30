@@ -140,7 +140,26 @@ body {
 }
 .glass-card:hover {
   border-color: var(--border-bright);
-  box-shadow: var(--shadow-card), var(--shadow-glow-blue);
+  box-shadow: var(--shadow-card), var(--shadow-glow-blue);/* Neural Loader Animation */
+.neural-loader {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(59, 130, 246, 0.1);
+  border-top: 3px solid var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
 }
 
 /* === BUTTONS === */
