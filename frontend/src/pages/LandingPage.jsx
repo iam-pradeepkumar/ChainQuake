@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Zap, Shield, BarChart3, Globe, ArrowRight, Activity, Plane, MapPin, CheckCircle2, UserCheck, Calendar, Cpu, Database, Network, ChevronUp, Lock, Terminal, Box, Share2, Layers, ZapOff } from 'lucide-react';
+import { Zap, Shield, BarChart3, Globe, ArrowRight, Activity, Phone, MapPin, CheckCircle2, UserCheck, Calendar, Cpu, Database, Network, ChevronUp, Lock, Terminal, Box, Share2, Layers, CloudRain, Anchor, Mic } from 'lucide-react';
 
 const fontStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700;800;900&display=swap');
@@ -16,11 +16,11 @@ const fontStyles = `
   }
   .neo-brutal:hover {
     transform: translate(-6px, -6px);
-    box-shadow: 18px 18px 0px rgba(250, 204, 21, 0.25);
-    border-color: #facc15;
+    box-shadow: 18px 18px 0px rgba(124, 58, 237, 0.25);
+    border-color: #7c3aed;
   }
   .text-gradient {
-    background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+    background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
@@ -40,7 +40,7 @@ const SectionTitle = ({ subtitle, title, align = 'center', id }) => (
     viewport={{ once: true }}
     style={{ textAlign: align, marginBottom: 100, position: 'relative', zIndex: 10, scrollMarginTop: 140 }}
   >
-    <div style={{ fontSize: 12, fontWeight: 900, color: '#facc15', letterSpacing: 5, marginBottom: 20 }}>{subtitle.toUpperCase()}</div>
+    <div style={{ fontSize: 12, fontWeight: 900, color: '#7c3aed', letterSpacing: 5, marginBottom: 20 }}>{subtitle.toUpperCase()}</div>
     <h2 style={{ fontSize: 'clamp(40px, 7vw, 84px)', fontWeight: 950, letterSpacing: -5, lineHeight: 0.85, color: '#fff' }}>{title}</h2>
   </motion.div>
 );
@@ -83,7 +83,7 @@ export default function LandingPage({ onGetStarted }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-          <Zap size={28} color="#facc15" fill="#facc15" />
+          <Zap size={28} color="#7c3aed" fill="#7c3aed" />
           <span style={{ fontSize: 22, fontWeight: 950, letterSpacing: -1.5 }}>CHAINQUAKE</span>
         </div>
         <div style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
@@ -91,7 +91,7 @@ export default function LandingPage({ onGetStarted }) {
             {[
               { name: 'Blueprint', id: 'blueprint' },
               { name: 'Architecture', id: 'architecture' },
-              { name: 'Metrics', id: 'metrics' }
+              { name: 'Intelligence', id: 'metrics' }
             ].map(item => (
               <span 
                 key={item.name} 
@@ -103,10 +103,10 @@ export default function LandingPage({ onGetStarted }) {
             ))}
           </div>
           <motion.button 
-            whileHover={{ scale: 1.05, boxShadow: '0 0 25px rgba(250, 204, 21, 0.4)' }} whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05, boxShadow: '0 0 25px rgba(124, 58, 237, 0.4)' }} whileTap={{ scale: 0.95 }}
             onClick={onGetStarted}
             style={{ 
-              background: '#facc15', color: '#000', border: 'none', 
+              background: '#7c3aed', color: '#fff', border: 'none', 
               borderRadius: 100, padding: '12px 32px', fontSize: 13, fontWeight: 900, cursor: 'pointer' 
             }}
           >ACCESS SYSTEM</motion.button>
@@ -132,13 +132,13 @@ export default function LandingPage({ onGetStarted }) {
               boxShadow: '0 120px 240px rgba(0,0,0,1)'
             }}
           >
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(circle at 50% 50%, rgba(250, 204, 21, 0.14) 0%, transparent 70%)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.14) 0%, transparent 70%)' }} />
             <div style={{ textAlign: 'center', zIndex: 10 }}>
               <motion.div animate={{ rotate: 360 }} transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}>
-                <Zap size={110} color="#facc15" fill="#facc15" style={{ filter: 'drop-shadow(0 0 50px rgba(250, 204, 21, 0.6))' }} />
+                <Zap size={110} color="#7c3aed" fill="#7c3aed" style={{ filter: 'drop-shadow(0 0 50px rgba(124, 58, 237, 0.6))' }} />
               </motion.div>
               <h1 className="hero-title" style={{ fontSize: 'clamp(56px, 11vw, 110px)', fontWeight: 950, letterSpacing: -8, lineHeight: 0.8, marginTop: 48, color: '#fff' }}>
-                DETECT. PREDICT. <br/> <span className="text-gradient">STABILIZE.</span>
+                INTELLIGENT. AUTONOMOUS. <br/> <span className="text-gradient">RESILIENT.</span>
               </h1>
               <motion.button 
                 whileHover={{ scale: 1.05, y: -5 }} whileTap={{ scale: 0.95 }}
@@ -157,26 +157,26 @@ export default function LandingPage({ onGetStarted }) {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
             style={{ fontSize: 'clamp(18px, 2.5vw, 22px)', color: '#cbd5e1', fontWeight: 600, marginTop: 80, maxWidth: 950, margin: '80px auto 0', lineHeight: 1.4, letterSpacing: -0.5 }}
           >
-            "Detect the tremors. Predict the impact. Stabilize the chain." <br/>
-            <span style={{ color: '#64748b', fontSize: 16 }}>Autonomous Supply Chain Intelligence Platform | Submitted by Team Peaky Blinders</span>
+            "The future of supply chain resilience isn't human-led. It's AI-stabilized." <br/>
+            <span style={{ color: '#64748b', fontSize: 16 }}>Multi-Source Intelligence | AI Voice Alerts | Neural Graph Mapping</span>
           </motion.p>
         </div>
       </motion.section>
 
       {/* MISSION BLUEPRINT */}
       <section className="section-spacing" style={{ padding: '200px 24px', maxWidth: 1400, margin: '0 auto', position: 'relative', zIndex: 10 }}>
-        <SectionTitle id="blueprint" subtitle="Mission Blueprint" title="Autonomous Intelligence." />
+        <SectionTitle id="blueprint" subtitle="Mission Blueprint" title="Beyond Observation." />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: 60 }}>
           <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} className="neo-brutal" style={{ padding: 60, background: 'rgba(255,255,255,0.02)' }}>
-            <h3 style={{ fontSize: 32, fontWeight: 950, marginBottom: 32, color: '#facc15' }}>The Challenge</h3>
+            <h3 style={{ fontSize: 32, fontWeight: 950, marginBottom: 32, color: '#7c3aed' }}>Total Visibility</h3>
             <p style={{ fontSize: 18, color: '#cbd5e1', lineHeight: 1.7, fontWeight: 500 }}>
-              Modern supply chains lack real-time visibility, failing to model dependency relationships effectively. This leads to delayed alerts and an inability to predict cascading impacts during global disruptions.
+              ChainQuake doesn't just watch the news. We monitor live weather sensors, maritime AIS tracking, and internal network health to detect disruptions before they hit your balance sheet.
             </p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} className="neo-brutal" style={{ padding: 60, border: '3px solid #facc15' }}>
-            <h3 style={{ fontSize: 32, fontWeight: 950, marginBottom: 32, color: '#fff' }}>The Solution</h3>
+          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} className="neo-brutal" style={{ padding: 60, border: '3px solid #7c3aed' }}>
+            <h3 style={{ fontSize: 32, fontWeight: 950, marginBottom: 32, color: '#fff' }}>Instant Stabilization</h3>
             <p style={{ fontSize: 18, color: '#cbd5e1', lineHeight: 1.7, fontWeight: 500 }}>
-              ChainQuake integrates live news data for detection, graph-based modeling for tracking, and machine learning for proactive risk prediction. Reactive response &rarr; <span style={{ color: '#facc15' }}>Proactive Decision-Making.</span>
+              When a node fails, our AI Voice Assistant calls operators immediately with a mitigation plan. Graph-based modeling allows for <span style={{ color: '#7c3aed' }}>Self-Healing Rerouting.</span>
             </p>
           </motion.div>
         </div>
@@ -185,13 +185,13 @@ export default function LandingPage({ onGetStarted }) {
       {/* ARCHITECTURAL STACK */}
       <section className="section-spacing" style={{ padding: '200px 24px', background: '#080808', borderTop: '2px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-          <SectionTitle id="architecture" subtitle="Technical Ecosystem" title="The Command Stack." align="left" />
+          <SectionTitle id="architecture" subtitle="The Neural Stack" title="Command Infrastructure." align="left" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32 }}>
             {[
-              { title: 'Frontend', items: ['React', 'Framer Motion', 'Lucide-React'], icon: Globe, color: '#4277FB' },
-              { title: 'Backend', items: ['FastAPI (Python)', 'NetworkX', 'Uvicorn'], icon: Terminal, color: '#facc15' },
-              { title: 'Intelligence', items: ['Scikit-learn', 'GLM 5 API', 'NLP Engine'], icon: Cpu, color: '#10b981' },
-              { title: 'Database', items: ['PostgreSQL', 'Cloud Native', 'Secure OAuth'], icon: Database, color: '#70449C' }
+              { title: 'Intelligence', items: ['GNews & NewsAPI', 'Meteo Sensors', 'Maritime AIS'], icon: Globe, color: '#3b82f6' },
+              { title: 'Neural Engine', items: ['NetworkX Graph', 'Random Forest ML', 'FastAPI Core'], icon: Cpu, color: '#7c3aed' },
+              { title: 'Notifications', items: ['Vapi.ai Voice', 'SMTP Resilience', 'Real-time WebSockets'], icon: Mic, color: '#10b981' },
+              { title: 'Persistence', items: ['Firebase Admin', 'Cloud Firestore', 'Strategic Audits'], icon: Database, color: '#ec4899' }
             ].map((v, i) => (
               <motion.div 
                 key={i} whileHover={{ y: -12 }} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
@@ -219,16 +219,16 @@ export default function LandingPage({ onGetStarted }) {
       <section className="section-spacing" style={{ padding: '220px 24px', background: '#0a0a0a', borderTop: '2px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10 }}>
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: 120, alignItems: 'center' }}>
           <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }}>
-            <SectionTitle id="metrics" subtitle="Performance Metrics" title="System Reliability." align="left" />
+            <SectionTitle id="metrics" subtitle="Tactical KPIs" title="Operational Accuracy." align="left" />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 60 }}>
               {[
-                { label: 'Prediction', val: 'MAE < 0.2', desc: 'Accuracy in impact modeling.' },
-                { label: 'Ingestion', val: '< 500ms', desc: 'News stream processing speed.' },
-                { label: 'Security', val: 'OAuth 2.0', desc: 'Google-authenticated access.' },
-                { label: 'Deployment', val: 'Render', desc: 'Cloud-native infrastructure.' }
+                { label: 'Voice Latency', val: '< 2.5s', desc: 'AI Voice Alert dispatch speed.' },
+                { label: 'Graph Processing', val: '< 100ms', desc: 'Neural node risk propagation.' },
+                { label: 'Weather Ingestion', val: 'Real-time', desc: 'Live sensor polling for major hubs.' },
+                { label: 'Cloud Sync', val: 'Firebase', desc: 'Global persistent state management.' }
               ].map((stat, i) => (
                 <div key={i}>
-                   <div style={{ fontSize: 44, fontWeight: 950, color: '#facc15', marginBottom: 12 }}>{stat.val}</div>
+                   <div style={{ fontSize: 44, fontWeight: 950, color: '#7c3aed', marginBottom: 12 }}>{stat.val}</div>
                    <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', letterSpacing: 2.5, marginBottom: 8 }}>{stat.label.toUpperCase()}</div>
                    <div style={{ fontSize: 14, color: '#64748b', fontWeight: 600 }}>{stat.desc}</div>
                 </div>
@@ -238,10 +238,10 @@ export default function LandingPage({ onGetStarted }) {
           <div className="neo-brutal" style={{ padding: 40, background: '#111', height: 600, position: 'relative', border: '3px solid rgba(255,255,255,0.1)' }}>
              <div style={{ height: '100%', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 6, repeat: Infinity }}>
-                   <Share2 size={160} color="#facc15" strokeWidth={1} />
+                   <Share2 size={160} color="#7c3aed" strokeWidth={1} />
                 </motion.div>
                 <div style={{ position: 'absolute', bottom: 48, left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }}>
-                   <div style={{ fontSize: 11, fontWeight: 950, color: '#facc15', letterSpacing: 6 }}>NEURAL_NODE_SYNCHRONIZATION</div>
+                   <div style={{ fontSize: 11, fontWeight: 950, color: '#7c3aed', letterSpacing: 6 }}>AUTONOMOUS_NETWORK_SYNC</div>
                 </div>
              </div>
           </div>
@@ -249,21 +249,21 @@ export default function LandingPage({ onGetStarted }) {
       </section>
 
       {/* CTA */}
-      <section id="cta" style={{ padding: '240px 24px', textAlign: 'center', background: 'rgba(250, 204, 21, 0.04)', position: 'relative', zIndex: 10 }}>
+      <section id="cta" style={{ padding: '240px 24px', textAlign: 'center', background: 'rgba(124, 58, 237, 0.04)', position: 'relative', zIndex: 10 }}>
         <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} style={{ maxWidth: 1000, margin: '0 auto' }}>
           <h2 style={{ fontSize: 'clamp(56px, 10vw, 120px)', fontWeight: 950, letterSpacing: -8, lineHeight: 0.8, marginBottom: 80 }}>
-            Stabilize the <br/> <span className="text-gradient">Chain.</span>
+            Induction <br/> <span className="text-gradient">Protocol.</span>
           </h2>
           <motion.button 
-            whileHover={{ scale: 1.05, boxShadow: '0 0 70px rgba(250, 204, 21, 0.6)' }} whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05, boxShadow: '0 0 70px rgba(124, 58, 237, 0.6)' }} whileTap={{ scale: 0.95 }}
             onClick={onGetStarted}
             style={{ 
-              background: '#facc15', color: '#000', border: 'none', borderRadius: 100, 
+              background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 100, 
               padding: '32px 100px', fontSize: 22, fontWeight: 950, cursor: 'pointer',
               letterSpacing: 3, display: 'inline-flex', alignItems: 'center', gap: 24
             }}
           >
-            INITIATE ACCESS <ArrowRight size={32} />
+            SECURE ACCESS <ArrowRight size={32} />
           </motion.button>
         </motion.div>
       </section>
@@ -273,15 +273,15 @@ export default function LandingPage({ onGetStarted }) {
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 120 }}>
           <div>
              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 48, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-                <Zap size={44} color="#facc15" fill="#facc15" />
+                <Zap size={44} color="#7c3aed" fill="#7c3aed" />
                 <span style={{ fontSize: 28, fontWeight: 950, letterSpacing: -2 }}>CHAINQUAKE</span>
              </div>
              <p style={{ fontSize: 18, color: '#64748b', lineHeight: 1.7, fontWeight: 500, maxWidth: 450 }}>
-               Autonomous intelligence platform submitted for TU x NIAT Hackathon. Quantifying fragility through neural node synchronization.
+               Neural supply chain intelligence with autonomous sensor integration. Submitted for TU x NIAT Hackathon.
              </p>
              <div style={{ marginTop: 40, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#10b981', letterSpacing: 2 }}>TEAM: PEAKY BLINDERS</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#10b981', letterSpacing: 2 }}>STATUS: MISSION ACTIVE</span>
              </div>
           </div>
           {[
@@ -290,15 +290,15 @@ export default function LandingPage({ onGetStarted }) {
               links: [
                 { name: 'Blueprint', id: 'blueprint' },
                 { name: 'Architecture', id: 'architecture' },
-                { name: 'Metrics', id: 'metrics' }
+                { name: 'Intelligence', id: 'metrics' }
               ] 
             },
             { 
               title: 'Intelligence', 
               links: [
-                { name: 'AI Models', id: 'metrics' },
-                { name: 'Risk Scoring', id: 'blueprint' },
-                { name: 'Node Sync', id: 'metrics' }
+                { name: 'Weather AI', id: 'metrics' },
+                { name: 'Vapi Voice', id: 'blueprint' },
+                { name: 'AIS Tracking', id: 'metrics' }
               ] 
             },
             { 
@@ -318,7 +318,7 @@ export default function LandingPage({ onGetStarted }) {
                     key={link.name} 
                     onClick={link.action ? link.action : () => scrollTo(link.id)}
                     style={{ fontSize: 18, color: '#64748b', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                    onMouseEnter={(e) => e.target.style.color = '#facc15'}
+                    onMouseEnter={(e) => e.target.style.color = '#7c3aed'}
                     onMouseLeave={(e) => e.target.style.color = '#64748b'}
                   >
                     {link.name}
@@ -329,7 +329,7 @@ export default function LandingPage({ onGetStarted }) {
           ))}
         </div>
         <div style={{ marginTop: 160, paddingTop: 40, borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
-           <div style={{ fontSize: 14, color: '#475569', fontWeight: 800, letterSpacing: 2 }}>&copy; 2026 TEAM PEAKY BLINDERS | TU x NIAT | ALL MISSION DATA SECURED.</div>
+           <div style={{ fontSize: 14, color: '#475569', fontWeight: 800, letterSpacing: 2 }}>&copy; 2026 TEAM PEAKY BLINDERS | TACTICAL INTELLIGENCE PROTOCOL | ALL MISSION DATA SECURED.</div>
         </div>
       </footer>
     </div>
