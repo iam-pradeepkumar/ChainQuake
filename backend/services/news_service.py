@@ -23,7 +23,7 @@ class NewsService:
         self.newsapi_key = settings.NEWS_API_KEY
         self.cache = []
         self.last_fetch = None
-        self.cache_ttl = 300
+        self.cache_ttl = 600 # 10 minutes cache
 
     def fetch_real_time_news(self):
         """Fetch intelligence from 5+ disparate sources in parallel"""

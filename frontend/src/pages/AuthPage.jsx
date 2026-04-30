@@ -12,23 +12,17 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  /**
-   * Save/update user profile in Firestore 'users' collection
-   */
   const saveUserToFirestore = async (user) => {
     try {
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
-        // Update existing user — bump login count and last_login
         await setDoc(userRef, {
           last_login: serverTimestamp(),
           login_count: increment(1)
         }, { merge: true });
-        console.log('Firestore: Updated existing user', user.uid);
       } else {
-        // Create new user document
         await setDoc(userRef, {
           uid: user.uid,
           email: user.email || '',
@@ -41,12 +35,9 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
           last_login: serverTimestamp(),
           login_count: 1
         });
-        console.log('Firestore: Created new user', user.uid);
       }
-      return true;
     } catch (err) {
-      console.error('Firestore: Failed to save user data:', err);
-      return false;
+      console.error('Firestore background sync failed:', err);
     }
   };
 
@@ -57,8 +48,8 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
       const user = await signInWithGoogle();
       const token = await user.getIdToken();
       
-      // Persist user data to Firestore
-      await saveUserToFirestore(user);
+      // Instant transition - sync in background
+      saveUserToFirestore(user);
 
       const userData = {
         uid: user.uid,
@@ -90,33 +81,26 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
         photoURL: null
       };
 
-      // Save to Firestore
-      const userRef = doc(db, 'users', uid);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        await setDoc(userRef, {
-          last_login: serverTimestamp(),
-          login_count: increment(1)
-        }, { merge: true });
-      } else {
-        await setDoc(userRef, {
-          ...userDoc,
-          provider: 'email',
-          role: 'operator',
-          status: 'active',
-          created_at: serverTimestamp(),
-          last_login: serverTimestamp(),
-          login_count: 1
-        });
-      }
+      // Instant transition - background sync
+      const syncEmailUser = async () => {
+        try {
+          const userRef = doc(db, 'users', uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            await setDoc(userRef, { last_login: serverTimestamp(), login_count: increment(1) }, { merge: true });
+          } else {
+            await setDoc(userRef, { ...userDoc, provider: 'email', role: 'operator', status: 'active', created_at: serverTimestamp(), last_login: serverTimestamp(), login_count: 1 });
+          }
+        } catch (e) { console.error(e); }
+      };
+      syncEmailUser();
 
       localStorage.setItem('token', 'email-auth-token');
       localStorage.setItem('user', JSON.stringify(userDoc));
       onAuthSuccess(userDoc);
     } catch (err) {
       console.error("Email Auth Error:", err);
-      setError('Authentication failed. Please check your credentials.');
+      setError('Authentication failed.');
     }
     setLoading(false);
   };
@@ -146,7 +130,7 @@ export default function AuthPage({ onAuthSuccess, onBack }) {
       <div className="grit-card animate-slide-in" style={{
         width: '100%', maxWidth: 420, padding: '48px 40px', zIndex: 1, position: 'relative',
         background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 32, boxShadow: '0 40px 100px rgba(0,0,0,0.8)'
+        borderRadius: 32, boxShadow: '0 40px 100px rgba(0,0,0,1)'
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>

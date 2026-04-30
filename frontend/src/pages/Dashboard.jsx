@@ -108,9 +108,15 @@ export default function Dashboard({ user, onLogout }) {
         notify_email: user?.email,
         notify_phone: "+916385388984"
       });
-      setSimResult(res.data);
-      // Refresh data after simulation
-      await fetchAll();
+      
+      // Update local state instantly from simulation result
+      if (res.data.affected_nodes) {
+        setSimResult(res.data);
+        // We can update the graph data locally here if we want absolute instant
+        // but fetchAll is still good for consistency. 
+        // We'll call fetchAll in the background without awaiting it.
+        fetchAll(); 
+      }
     } catch (err) {
       console.error('Simulation error:', err);
     }
