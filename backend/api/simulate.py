@@ -11,24 +11,31 @@ class SimulationRequest(BaseModel):
     notify_email: Optional[str] = None
     notify_phone: Optional[str] = None
 
-def _dispatch_notifications(notify_email, notify_phone, event_name, critical_nodes):
+def _dispatch_notifications(notify_email, notify_phone, event_name, affected_nodes):
+    print(f"🚀 MISSION DISPATCH STARTED: Processing alerts for {event_name}...")
     from backend.services.notification_service import notification_service
-    msg = f"CRITICAL DISRUPTION: {event_name}. {len(critical_nodes)} nodes are in critical status. Most affected: {critical_nodes[0]['name']}."
+    
+    # Calculate summary
+    critical_count = sum(1 for n in affected_nodes if n['status'] == 'critical')
+    msg = f"CRITICAL DISRUPTION: {event_name}. {critical_count} nodes critical, {len(affected_nodes)} total affected."
     
     if notify_email:
+        print(f"📡 DISPATCHING EMAIL to {notify_email}...")
         notification_service.send_email_alert(
             to_email=notify_email,
-            subject=f"CRITICAL: {event_name}",
+            subject=f"DISRUPTION: {event_name}",
             body=msg,
-            alert_data={"severity": "critical", "company_id": critical_nodes[0]['name']}
+            alert_data={"severity": "critical", "company_id": affected_nodes[0]['name']}
         )
     
     if notify_phone:
+        print(f"📞 DISPATCHING AI VOICE CALL to {notify_phone}...")
         notification_service.make_phone_call(
             to_phone=notify_phone,
             message=msg,
             alert_data={"severity": "critical"}
         )
+    print("✅ MISSION DISPATCH COMPLETED.")
 
 @router.post("")
 async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTasks):
