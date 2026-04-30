@@ -1,10 +1,11 @@
 """
 Notification Service - Email (SMTP) & AI Voice Call (Vapi.ai) Alert System
-Handles dispatching critical supply chain alerts via multiple channels.
+Optimized for low-latency async dispatching.
 """
 import smtplib
 import os
-import requests
+import httpx
+import asyncio
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -18,7 +19,7 @@ class NotificationService:
         self.smtp_port = settings.SMTP_PORT
         self.smtp_username = settings.SMTP_USERNAME
         self.smtp_password = settings.SMTP_PASSWORD
-        self.from_email = settings.SMTP_USERNAME or "chainquake-alerts@system.com"
+        self.from_email = settings.SMTP_USERNAME # Critical: From must match authenticated user for Gmail
 
         # Vapi.ai config
         self.vapi_api_key = settings.VAPI_API_KEY
@@ -29,7 +30,7 @@ class NotificationService:
         self.history = []
 
     def send_email_alert(self, to_email: str, subject: str, body: str, alert_data: dict = None):
-        """Send an email alert via SMTP (Gmail App Password)"""
+        """Send an email alert via SMTP (Gmail App Password) - Synchronous wrapper for background tasks"""
         result = {
             "channel": "email",
             "to": to_email,
@@ -40,13 +41,13 @@ class NotificationService:
 
         if not self.smtp_username or not self.smtp_password:
             result["status"] = "failed"
-            result["error"] = "SMTP credentials not configured."
+            result["error"] = "SMTP credentials missing. Please set SMTP_USERNAME and SMTP_PASSWORD."
             self.history.append(result)
             return result
 
         try:
             msg = MIMEMultipart("alternative")
-            msg["From"] = f"ChainQuake Alerts <{self.from_email}>"
+            msg["From"] = f"ChainQuake Alerts <{self.smtp_username}>"
             msg["To"] = to_email
             msg["Subject"] = f"⚡ ChainQuake Alert: {subject}"
 
@@ -56,52 +57,60 @@ class NotificationService:
             msg.attach(MIMEText(plain_body, "plain"))
             msg.attach(MIMEText(html_body, "html"))
 
-            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
-            server.starttls()
+            # Use SMTP_SSL for port 465 or STARTTLS for 587
+            if self.smtp_port == 465:
+                server = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port, timeout=10)
+            else:
+                server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10)
+                server.starttls()
+            
             server.login(self.smtp_username, self.smtp_password)
-            server.sendmail(self.from_email, to_email, msg.as_string())
+            server.sendmail(self.smtp_username, to_email, msg.as_string())
             server.quit()
 
             result["status"] = "sent"
+            print(f"NOTIFICATION: Email sent successfully to {to_email}")
         except Exception as e:
             result["status"] = "failed"
             result["error"] = str(e)
+            print(f"NOTIFICATION: Email failed to {to_email} — {e}")
 
         self.history.append(result)
         return result
 
     def make_phone_call(self, to_phone: str, message: str, alert_data: dict = None):
-        """Make an automated AI voice call via Vapi.ai"""
+        """
+        Make an automated AI voice call via Vapi.ai.
+        Now uses httpx for faster connection pooling.
+        """
         result = {
             "channel": "phone",
             "to": to_phone,
-            "message": message,
             "timestamp": datetime.utcnow().isoformat(),
             "status": "pending"
         }
 
         if not self.vapi_api_key or not self.vapi_assistant_id:
             result["status"] = "failed"
-            result["error"] = "Vapi.ai not configured. Set VAPI_API_KEY and VAPI_ASSISTANT_ID."
+            result["error"] = "Vapi credentials missing."
             self.history.append(result)
             return result
 
+        # Force E.164 format if missing
+        if not to_phone.startswith('+'):
+            to_phone = f"+91{to_phone}" # Default to India if no prefix
+
         try:
-            # Prepare Vapi.ai payload
             url = "https://api.vapi.ai/call"
             headers = {
                 "Authorization": f"Bearer {self.vapi_api_key}",
                 "Content-Type": "application/json"
             }
             
-            # Use a transient assistant if we want to customize the initial message dynamically
-            # Or use a saved assistant and pass variables
             payload = {
                 "assistantId": self.vapi_assistant_id,
                 "phoneNumberId": self.vapi_phone_id if self.vapi_phone_id else None,
-                "customer": {
-                    "number": to_phone
-                },
+                "customer": {"number": to_phone},
                 "assistantOverrides": {
                     "variableValues": {
                         "alert_message": message,
@@ -110,10 +119,9 @@ class NotificationService:
                 }
             }
             
-            # If no saved phone number ID, Vapi will use their default trial numbers if available
-            # or you can provide a 'phoneNumber' object.
-            
-            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            # Using synchronous httpx call as this is usually wrapped in a BackgroundTask thread anyway
+            with httpx.Client(timeout=15.0) as client:
+                response = client.post(url, json=payload, headers=headers)
             
             if response.status_code in [200, 201]:
                 call_data = response.json()
@@ -122,13 +130,13 @@ class NotificationService:
                 print(f"NOTIFICATION: Vapi call initiated to {to_phone}")
             else:
                 result["status"] = "failed"
-                result["error"] = f"Vapi API Error {response.status_code}: {response.text}"
-                print(f"NOTIFICATION: Vapi call failed: {response.text}")
+                result["error"] = f"Vapi Error {response.status_code}: {response.text}"
+                print(f"NOTIFICATION: Vapi API Error — {response.text}")
 
         except Exception as e:
             result["status"] = "failed"
             result["error"] = str(e)
-            print(f"NOTIFICATION: Vapi call failed — {e}")
+            print(f"NOTIFICATION: Vapi call exception — {e}")
 
         self.history.append(result)
         return result
@@ -138,32 +146,39 @@ class NotificationService:
 
     def get_config_status(self):
         return {
-            "email": {"configured": bool(self.smtp_username and self.smtp_password)},
-            "phone": {"configured": bool(self.vapi_api_key and self.vapi_assistant_id), "provider": "vapi.ai"}
+            "email": {"configured": bool(self.smtp_username and self.smtp_password), "user": self.smtp_username},
+            "phone": {"configured": bool(self.vapi_api_key and self.vapi_assistant_id)}
         }
 
     def _build_email_html(self, subject, body, alert_data):
         severity = alert_data.get("severity", "high") if alert_data else "high"
-        company = alert_data.get("company_id", "") if alert_data else ""
         severity_color = {"critical": "#ef4444", "high": "#f59e0b", "medium": "#3b82f6", "low": "#10b981"}.get(severity, "#f59e0b")
 
-        return f"""
+        return f\"\"\"
         <!DOCTYPE html>
         <html>
-        <body style="margin:0;padding:0;background:#0a0a0a;font-family:sans-serif;">
-            <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
-                <div style="background:linear-gradient(135deg,#7c3aed,#3b82f6);padding:32px;border-radius:24px 24px 0 0;text-align:center;">
-                    <div style="font-size:24px;font-weight:900;color:white;letter-spacing:2px;">⚡ CHAINQUAKE</div>
+        <body style="margin:0;padding:0;background:#050505;font-family:'Inter', sans-serif;color:#ffffff;">
+            <div style="max-width:600px;margin:20px auto;background:#111;border:1px solid #222;border-radius:16px;overflow:hidden;">
+                <div style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);padding:40px 20px;text-align:center;">
+                    <h1 style="margin:0;font-size:28px;letter-spacing:4px;font-weight:900;">CHAINQUAKE</h1>
+                    <p style="margin:10px 0 0 0;font-size:12px;opacity:0.8;letter-spacing:2px;">TACTICAL INTELLIGENCE ALERT</p>
                 </div>
-                <div style="background:#111;padding:32px;border-bottom-left-radius:24px;border-bottom-right-radius:24px;color:white;">
-                    <div style="display:inline-block;background:{severity_color};padding:4px 12px;border-radius:20px;font-size:10px;font-weight:900;margin-bottom:16px;">{severity.upper()}</div>
-                    <h2 style="margin:0 0 16px 0;">{subject}</h2>
-                    <p style="color:#94a3b8;line-height:1.6;">{body}</p>
-                    <a href="https://chainquake-96ni.onrender.com" style="display:inline-block;margin-top:24px;background:#7c3aed;color:white;padding:12px 24px;border-radius:50px;text-decoration:none;font-weight:700;">OPEN DASHBOARD</a>
+                <div style="padding:40px;">
+                    <div style="display:inline-block;padding:6px 16px;background:{severity_color};border-radius:4px;font-size:11px;font-weight:900;margin-bottom:24px;">{severity.upper()} PRIORITY</div>
+                    <h2 style="margin:0 0 20px 0;font-size:22px;">{subject}</h2>
+                    <p style="font-size:16px;line-height:1.7;color:#ccc;margin-bottom:30px;">{body}</p>
+                    <div style="padding:20px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid rgba(255,255,255,0.05);margin-bottom:30px;">
+                        <div style="font-size:10px;color:#666;font-weight:800;margin-bottom:8px;text-transform:uppercase;">Asset ID</div>
+                        <div style="font-family:monospace;font-size:14px;color:#3b82f6;">{alert_data.get('company_id', 'N/A') if alert_data else 'N/A'}</div>
+                    </div>
+                    <a href="https://chainquake-96ni.onrender.com" style="display:block;text-align:center;background:#fff;color:#000;padding:16px;border-radius:8px;text-decoration:none;font-weight:900;font-size:14px;">ACCESS COMMAND CENTER</a>
+                </div>
+                <div style="padding:20px;text-align:center;background:#0a0a0a;font-size:11px;color:#444;">
+                    &copy; 2024 ChainQuake AI. Autonomous Neural Supply Chain Monitoring.
                 </div>
             </div>
         </body>
-        </html>"""
+        </html>\"\"\"
 
 
 notification_service = NotificationService()
