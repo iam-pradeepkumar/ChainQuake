@@ -127,20 +127,36 @@ class NotificationService:
 
         try:
             url = "https://api.vapi.ai/call"
-            headers = {"Authorization": f"Bearer {self.vapi_api_key}", "Content-Type": "application/json"}
+            headers = {
+                "Authorization": f"Bearer {self.vapi_api_key}", 
+                "Content-Type": "application/json"
+            }
+            
             payload = {
                 "assistantId": self.vapi_assistant_id,
-                "customer": {"number": to_phone},
-                "assistantOverrides": {
-                    "variableValues": {
-                        "alert_message": message,
-                        "severity": alert_data.get("severity", "high") if alert_data else "high"
-                    }
+                "customer": {"number": to_phone}
+            }
+            
+            # Only add phoneNumberId if explicitly provided
+            if self.vapi_phone_id:
+                payload["phoneNumberId"] = self.vapi_phone_id
+                
+            # Add overrides for dynamic intelligence reporting
+            payload["assistantOverrides"] = {
+                "variableValues": {
+                    "alert_message": message
                 }
             }
+            
             with httpx.Client(timeout=15.0) as client:
                 response = client.post(url, json=payload, headers=headers)
-            return response.status_code in [200, 201]
+            
+            if response.status_code in [200, 201]:
+                logger.info(f"📞 DISPATCH SUCCESS: AI Voice initiated to {to_phone}")
+                return True
+            else:
+                logger.error(f"📞 DISPATCH FAILED: Vapi API Error {response.status_code} - {response.text}")
+                return False
         except Exception as e:
             logger.error(f"📞 DISPATCH EXCEPTION: {str(e)}")
             return False
