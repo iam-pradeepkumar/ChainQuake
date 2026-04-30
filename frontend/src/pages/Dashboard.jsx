@@ -7,12 +7,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import NetworkMap from '../components/NetworkMap';
-import Sidebar from '../components/Sidebar';
 import AlertsPanel from '../components/AlertsPanel';
 import NodeDetail from '../components/NodeDetail';
 import SimulationPanel from '../components/SimulationPanel';
 import ChatCommander from '../components/ChatCommander';
-import { companiesApi, simulateApi } from '../services/api';
+import { riskApi, simulateApi } from '../services/api';
 
 export default function Dashboard({ user, onLogout }) {
   const [nodes, setNodes] = useState([]);
@@ -26,7 +25,7 @@ export default function Dashboard({ user, onLogout }) {
   const loadData = useCallback(async (isSilent = false) => {
     if(!isSilent) setLoading(true);
     try {
-      const res = await companiesApi.getAll();
+      const res = await riskApi.getGraph();
       setNodes(res.data.nodes || []);
       setLinks(res.data.links || []);
     } catch (e) {
@@ -201,10 +200,10 @@ export default function Dashboard({ user, onLogout }) {
         {/* Center - Geospatial Intelligence */}
         <main className="map-container">
            <NetworkMap 
-             nodes={nodes} 
-             links={links} 
+             graphData={{ nodes, links }}
              onNodeSelect={setSelectedNode} 
              selectedNode={selectedNode}
+             theme="dark"
            />
            
            <div className="map-overlay-bottom">
