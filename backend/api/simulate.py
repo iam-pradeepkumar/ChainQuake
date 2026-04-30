@@ -58,9 +58,10 @@ async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTas
         elif node["status"] == "at_risk":
             add_alert("high", f"SIMULATION: {node['name']} showing elevated risk", node["id"])
 
-    # 3. Queue Notifications and DB Persistence as Background Tasks
-    if affected_nodes and (req.notify_email or req.notify_phone):
-        print(f"SIMULATION: Triggering automatic alerts for {len(affected_nodes)} nodes. Target: {req.notify_email}")
+    # 3. Aggressive Notification Trigger
+    # Fire if there's any disruption OR if it's a custom event
+    if affected_nodes or req.custom_event:
+        print(f"!!! ALERT TRIGGERED !!! Nodes affected: {len(affected_nodes)}. Sending to: {req.notify_email} / {req.notify_phone}")
         background_tasks.add_task(
             _dispatch_notifications, 
             req.notify_email, 
@@ -68,6 +69,8 @@ async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTas
             result['event'], 
             affected_nodes
         )
+    else:
+        print("SIMULATION: No nodes affected. Skipping automatic notifications.")
 
     # 4. Broadcast update (WS)
     from backend.main import manager
@@ -88,3 +91,22 @@ async def reset_simulation(background_tasks: BackgroundTasks):
     await manager.broadcast({"type": "REFRESH_ALL"})
     
     return {"status": "reset", "health": graph_engine.get_health()}
+
+@router.post("/test_notify")
+async def test_notification(req: SimulationRequest, background_tasks: BackgroundTasks):
+    """Direct endpoint to test notifications without a simulation"""
+    from backend.services.graph_engine import graph_engine
+    
+    mock_node = list(graph_engine.graph.nodes(data=True))[0]
+    affected = [{"id": mock_node[0], "name": mock_node[1].get('name', 'TEST ASSET'), "status": "critical"}]
+    
+    print(f"DEBUG: Manual Test Dispatch initiated to {req.notify_email}")
+    
+    background_tasks.add_task(
+        _dispatch_notifications, 
+        req.notify_email, 
+        req.notify_phone, 
+        "MANUAL SYSTEM TEST", 
+        affected
+    )
+    return {"status": "dispatched", "target": req.notify_email}

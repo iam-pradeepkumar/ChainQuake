@@ -204,6 +204,7 @@ export default function Dashboard({ user, onLogout }) {
               <SimulationPanel
                 onSimulate={handleSimulate} onReset={handleReset}
                 simResult={simResult} loading={simLoading}
+                userEmail={user?.email}
               />
             </div>
             <div className="grit-card" style={{ padding: 24, flex: 1, minHeight: 300 }}>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Zap, RotateCcw, MapPin, CloudLightning, Truck, Factory, Bug, Flame, AlertTriangle } from 'lucide-react';
+import { Zap, RotateCcw, MapPin, CloudLightning, Truck, Factory, Bug, Flame, AlertTriangle, RefreshCw, Send } from 'lucide-react';
+import { simulateApi } from '../services/api';
 
 const EVENTS = [
   { type: 'natural_disaster', label: 'Cyclone / Flood', icon: CloudLightning, color: 'var(--accent-red)' },
@@ -10,8 +11,25 @@ const EVENTS = [
   { type: 'pandemic', label: 'Pandemic', icon: Flame, color: 'var(--accent-red)' },
 ];
 
-export default function SimulationPanel({ onSimulate, onReset, simResult, loading }) {
+export default function SimulationPanel({ onSimulate, onReset, simResult, loading, userEmail }) {
   const [selected, setSelected] = useState(null);
+  const [testStatus, setTestStatus] = useState(null);
+
+  const handleTestNotify = async () => {
+    setTestStatus('sending');
+    try {
+      await simulateApi.testNotify({
+        notify_email: userEmail,
+        notify_phone: "+916385388984"
+      });
+      setTestStatus('sent');
+      setTimeout(() => setTestStatus(null), 3000);
+    } catch (e) {
+      console.error(e);
+      setTestStatus('error');
+      setTimeout(() => setTestStatus(null), 3000);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -31,9 +49,6 @@ export default function SimulationPanel({ onSimulate, onReset, simResult, loadin
             }
           }} style={{ background: 'none', border: 'none', color: 'var(--accent-purple)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800 }}>
              SYNC REAL DATA
-          </button>
-          <button onClick={onReset} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800 }}>
-            <RotateCcw size={14} /> RESET
           </button>
         </div>
       </div>
@@ -69,16 +84,40 @@ export default function SimulationPanel({ onSimulate, onReset, simResult, loadin
       <button 
         className="pill-button gold-gradient" 
         disabled={!selected || loading} 
-        style={{ width: '100%', justifyContent: 'center', opacity: selected ? 1 : 0.5 }} 
+        style={{ width: '100%', justifyContent: 'center', opacity: selected ? 1 : 0.5, marginBottom: '12px' }} 
         onClick={() => selected && onSimulate({ event_type: selected })}
       >
         {loading ? 'SIMULATING...' : 'EXECUTE DISRUPTION'}
       </button>
 
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+        <button
+          onClick={onReset}
+          className="btn btn-ghost"
+          style={{ width: '100%', justifyContent: 'center', border: 'var(--border-subtle)', padding: '10px', borderRadius: '12px', background: 'var(--glass-bg)', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          <RotateCcw size={16} /> RESET
+        </button>
+        <button
+          onClick={handleTestNotify}
+          disabled={testStatus === 'sending'}
+          className="btn btn-ghost"
+          style={{ 
+            width: '100%', justifyContent: 'center', 
+            border: `1px solid ${testStatus === 'sent' ? '#10b981' : 'var(--accent-blue)'}`, 
+            color: testStatus === 'sent' ? '#10b981' : 'var(--accent-blue)', 
+            padding: '10px', borderRadius: '12px', background: 'transparent', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 900
+          }}
+        >
+          <Send size={16} /> {testStatus === 'sending' ? 'SENDING...' : (testStatus === 'sent' ? 'SENT!' : 'TEST ALERTS')}
+        </button>
+      </div>
+
       {/* Results View */}
       {simResult && (
         <div style={{ 
-          marginTop: 24, padding: 20, background: 'rgba(239, 68, 68, 0.05)',
+          padding: 20, background: 'rgba(239, 68, 68, 0.05)',
           borderRadius: 20, border: '1px solid rgba(239, 68, 68, 0.2)',
           animation: 'slideUp 0.4s ease'
         }}>
@@ -95,11 +134,6 @@ export default function SimulationPanel({ onSimulate, onReset, simResult, loadin
                 <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: 800, marginBottom: 4 }}>NETWORK IMPACT</div>
                 <div style={{ fontSize: 12, fontWeight: 900, color: 'white' }}>{(simResult.affected_nodes || []).length} NODES</div>
              </div>
-          </div>
-
-          <div style={{ marginTop: 16, fontSize: 11, color: 'var(--text-muted)', fontWeight: 700 }}>
-             Predicted Network Health after impact: 
-             <span style={{ color: 'var(--accent-gold)', marginLeft: 8, fontSize: 14, fontWeight: 950 }}>{simResult.health_after?.health_score || '—'}%</span>
           </div>
         </div>
       )}

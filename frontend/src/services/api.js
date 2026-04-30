@@ -28,6 +28,7 @@ export const newsApi = {
 export const simulateApi = {
   run: (data) => api.post('/simulate', data),
   reset: () => api.post('/simulate/reset'),
+  testNotify: (data) => api.post('/simulate/test_notify', data),
 };
 
 export const chatApi = {
