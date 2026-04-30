@@ -90,6 +90,7 @@ export default function LandingPage({ onGetStarted }) {
           <div className="hide-mobile" style={{ display: 'flex', gap: 32 }}>
             {[
               { name: 'Blueprint', id: 'blueprint' },
+              { name: 'How It Works', id: 'how-it-works' },
               { name: 'Architecture', id: 'architecture' },
               { name: 'Intelligence', id: 'metrics' }
             ].map(item => (
@@ -179,6 +180,35 @@ export default function LandingPage({ onGetStarted }) {
               When a node fails, our AI Voice Assistant calls operators immediately with a mitigation plan. Graph-based modeling allows for <span style={{ color: '#7c3aed' }}>Self-Healing Rerouting.</span>
             </p>
           </motion.div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section id="how-it-works" className="section-spacing" style={{ padding: '200px 24px', maxWidth: 1400, margin: '0 auto', position: 'relative', zIndex: 10 }}>
+        <SectionTitle subtitle="Operational Workflow" title="How ChainQuake Works." />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40 }}>
+          {[
+            { step: '01', title: 'Data Ingestion', desc: 'The system continuously polls global news APIs, weather sensors, and maritime AIS feeds for anomaly detection.', icon: Globe },
+            { step: '02', title: 'Neural Analysis', desc: 'Our graph engine propagates risks across the supply network, identifying high-risk nodes and potential cascades.', icon: Cpu },
+            { step: '03', title: 'Disruption Trigger', desc: 'Operators can manually trigger "what-if" simulations or let the AI detect real-time regional threats.', icon: Activity },
+            { step: '04', title: 'Autonomous Alerts', desc: 'When a disruption is confirmed, the system auto-dispatches AI Voice Calls and Resend-backed email alerts.', icon: Mic }
+          ].map((item, idx) => (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className="neo-brutal"
+              style={{ padding: '40px', background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', gap: 20 }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 40, fontWeight: 950, color: '#7c3aed', opacity: 0.3 }}>{item.step}</span>
+                <item.icon size={24} color="#7c3aed" />
+              </div>
+              <h4 style={{ fontSize: 24, fontWeight: 900, color: '#fff' }}>{item.title}</h4>
+              <p style={{ fontSize: 16, color: '#94a3b8', lineHeight: 1.6, fontWeight: 500 }}>{item.desc}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
