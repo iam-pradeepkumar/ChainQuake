@@ -125,7 +125,7 @@ class NotificationService:
     def _build_email_html(self, subject, body, alert_data):
         severity = alert_data.get("severity", "high") if alert_data else "high"
         color = {"critical": "#ef4444", "high": "#f59e0b"}.get(severity, "#3b82f6")
-        return f\"\"\"
+        return f"""
         <html>
         <body style="background:#000;color:#fff;font-family:sans-serif;padding:40px;">
             <div style="max-width:600px;border:1px solid #333;border-radius:20px;overflow:hidden;">
@@ -140,6 +140,6 @@ class NotificationService:
                 </div>
             </div>
         </body>
-        </html>\"\"\"
+        </html>"""
 
 notification_service = NotificationService()
