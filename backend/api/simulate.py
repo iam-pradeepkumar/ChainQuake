@@ -12,30 +12,33 @@ class SimulationRequest(BaseModel):
     notify_phone: Optional[str] = None
 
 def _dispatch_notifications(notify_email, notify_phone, event_name, affected_nodes):
-    print(f"🚀 MISSION DISPATCH STARTED: Processing alerts for {event_name}...")
+    import sys
+    print(f"\n[!!!] MISSION DISPATCH STARTED: {event_name}", flush=True)
     from backend.services.notification_service import notification_service
     
-    # Calculate summary
     critical_count = sum(1 for n in affected_nodes if n['status'] == 'critical')
-    msg = f"CRITICAL DISRUPTION: {event_name}. {critical_count} nodes critical, {len(affected_nodes)} total affected."
+    msg = f"CHAINQUAKE ALERT: {event_name}. {critical_count} nodes critical, {len(affected_nodes)} total affected nodes in Tamil Nadu."
     
     if notify_email:
-        print(f"📡 DISPATCHING EMAIL to {notify_email}...")
-        notification_service.send_email_alert(
+        print(f"📡 DISPATCHING EMAIL to {notify_email}...", flush=True)
+        res = notification_service.send_email_alert(
             to_email=notify_email,
             subject=f"DISRUPTION: {event_name}",
             body=msg,
-            alert_data={"severity": "critical", "company_id": affected_nodes[0]['name']}
+            alert_data={"severity": "critical", "company_id": affected_nodes[0]['name'] if affected_nodes else "N/A"}
         )
+        print(f"📡 EMAIL RESULT: {res}", flush=True)
     
     if notify_phone:
-        print(f"📞 DISPATCHING AI VOICE CALL to {notify_phone}...")
-        notification_service.make_phone_call(
+        print(f"📞 DISPATCHING VOICE to {notify_phone}...", flush=True)
+        res = notification_service.make_phone_call(
             to_phone=notify_phone,
             message=msg,
             alert_data={"severity": "critical"}
         )
-    print("✅ MISSION DISPATCH COMPLETED.")
+        print(f"📞 VOICE RESULT: {res}", flush=True)
+    
+    print("✅ MISSION DISPATCH COMPLETED.\n", flush=True)
 
 @router.post("")
 async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTasks):

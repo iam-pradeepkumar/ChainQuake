@@ -17,7 +17,14 @@ app = FastAPI(title="ChainQuake API", version="1.2.0", description="Autonomous I
 # Database Initialization on Startup
 @app.on_event("startup")
 async def startup_event():
-    print("CHAINQUAKE: System operational. Real-time intelligence engine active.")
+    print("CHAINQUAKE: System operational. Real-time intelligence engine active.", flush=True)
+    # Background Heartbeat for Render Log verification
+    async def heartbeat():
+        import sys
+        while True:
+            await asyncio.sleep(60)
+            print("💓 NEURAL LINK ACTIVE: System checking for disruptions...", flush=True)
+    asyncio.create_task(heartbeat())
 
 # CORS
 app.add_middleware(
