@@ -1,5 +1,6 @@
 fastapi
-uvicorn
+uvicorn[standard]
+websockets
 gunicorn
 networkx
 scikit-learn
@@ -9,6 +10,7 @@ pydantic
 email-validator
 python-dotenv
 requests
+httpx
 python-jose[cryptography]
 firebase-admin
 SQLAlchemy
