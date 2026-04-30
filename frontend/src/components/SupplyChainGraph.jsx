@@ -37,7 +37,7 @@ function MapEvents({ onZoomChange }) {
   return null;
 }
 
-export default function NetworkMap({ graphData, onNodeSelect, selectedNode, theme }) {
+export default function SupplyChainGraph({ graphData, onNodeSelect, selectedNode, theme }) {
   const [zoomLevel, setZoomLevel] = useState(7);
   
   // Tight Tamil Nadu Bounding Box
