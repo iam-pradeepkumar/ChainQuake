@@ -1,9 +1,10 @@
 """
 Graph Engine - Neural Network Mapping using Google Firestore
-Optimized for high-performance batch updates and low-latency synchronization.
+Optimized for high-performance batch updates and non-blocking persistence.
 """
 import networkx as nx
 import os
+import threading
 try:
     from backend.core.firebase_admin import db_firestore
     USE_FIRESTORE = True
@@ -27,7 +28,6 @@ class GraphEngine:
             print("GRAPH ENGINE: FIRESTORE NOT INITIALIZED.")
 
     def _sync_with_firestore(self):
-        # Fetching all nodes and edges in parallel would be faster, but stream() is okay for now
         nodes_ref = db_firestore.collection('nodes').stream()
         edges_ref = db_firestore.collection('edges').stream()
         
@@ -97,7 +97,8 @@ class GraphEngine:
     def run_batch_simulation(self, start_nodes, impact_factor):
         """
         High-performance simulation runner. 
-        Calculates all cascading risks in-memory first, then flushes to Firestore in ONE batch.
+        Calculates all cascading risks in-memory first, returns results INSTANTLY.
+        Database persistence happens in a background thread to avoid blocking the UI.
         """
         visited = {} # node_id -> risk_info
         
@@ -121,51 +122,62 @@ class GraphEngine:
             for succ in self.graph.successors(node_id):
                 propagate(succ, current_impact * 0.6, depth + 1)
 
-        # Run in-memory propagation
+        # 1. In-memory propagation
         for nid in start_nodes:
             propagate(nid, impact_factor, 0)
             
-        # Update in-memory graph and collect batch updates
+        # 2. Update in-memory graph (Instant)
+        for nid, info in visited.items():
+            self.graph.nodes[nid]["current_risk"] = info["risk_score"]
+            self.graph.nodes[nid]["status"] = info["status"]
+
+        # 3. Non-blocking Firestore update
         if USE_FIRESTORE:
+            threading.Thread(target=self._persist_simulation_results, args=(visited,)).start()
+
+        return list(visited.values())
+
+    def _persist_simulation_results(self, visited):
+        """Background task to sync simulation results to Firestore"""
+        try:
             batch = db_firestore.batch()
             for nid, info in visited.items():
-                self.graph.nodes[nid]["current_risk"] = info["risk_score"]
-                self.graph.nodes[nid]["status"] = info["status"]
-                
                 node_ref = db_firestore.collection('nodes').document(nid)
                 batch.update(node_ref, {
                     "current_risk": info["risk_score"],
                     "status": info["status"]
                 })
             batch.commit()
-            print(f"GRAPH ENGINE: Batch committed {len(visited)} node updates.")
-        else:
-            for nid, info in visited.items():
-                self.graph.nodes[nid]["current_risk"] = info["risk_score"]
-                self.graph.nodes[nid]["status"] = info["status"]
-
-        return list(visited.values())
+            print(f"GRAPH ENGINE: Background batch committed {len(visited)} node updates.")
+        except Exception as e:
+            print(f"GRAPH ENGINE: Background persistence failed: {e}")
 
     def reset_risks(self):
-        """Reset all risks to baseline using a single Firestore batch update"""
+        """Reset all risks in-memory instantly and sync to Firestore in background"""
+        updates = {}
+        for nid in self.graph.nodes:
+            base = self.graph.nodes[nid]["base_risk"]
+            self.graph.nodes[nid]["current_risk"] = base
+            self.graph.nodes[nid]["status"] = "operational"
+            updates[nid] = {"risk": base, "status": "operational"}
+            
         if USE_FIRESTORE:
+            threading.Thread(target=self._persist_reset, args=(updates,)).start()
+
+    def _persist_reset(self, updates):
+        """Background task to sync reset to Firestore"""
+        try:
             batch = db_firestore.batch()
-            for nid in self.graph.nodes:
-                base = self.graph.nodes[nid]["base_risk"]
-                self.graph.nodes[nid]["current_risk"] = base
-                self.graph.nodes[nid]["status"] = "operational"
-                
+            for nid, data in updates.items():
                 node_ref = db_firestore.collection('nodes').document(nid)
                 batch.update(node_ref, {
-                    "current_risk": base,
-                    "status": "operational"
+                    "current_risk": data["risk"],
+                    "status": data["status"]
                 })
             batch.commit()
-            print(f"GRAPH ENGINE: Batch reset {len(self.graph.nodes)} nodes.")
-        else:
-            for nid in self.graph.nodes:
-                self.graph.nodes[nid]["current_risk"] = self.graph.nodes[nid]["base_risk"]
-                self.graph.nodes[nid]["status"] = "operational"
+            print(f"GRAPH ENGINE: Background reset committed {len(updates)} nodes.")
+        except Exception as e:
+            print(f"GRAPH ENGINE: Background reset failed: {e}")
 
     def get_health(self):
         nodes = list(self.graph.nodes(data=True))
