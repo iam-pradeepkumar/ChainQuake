@@ -140,7 +140,10 @@ body {
 }
 .glass-card:hover {
   border-color: var(--border-bright);
-  box-shadow: var(--shadow-card), var(--shadow-glow-blue);/* Neural Loader Animation */
+  box-shadow: var(--shadow-card), var(--shadow-glow-blue);
+}
+
+/* Neural Loader Animation */
 .neural-loader {
   width: 48px;
   height: 48px;
@@ -159,7 +162,6 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.05); }
-}
 }
 
 /* === BUTTONS === */
