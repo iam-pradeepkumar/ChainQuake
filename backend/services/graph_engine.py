@@ -113,8 +113,12 @@ class GraphEngine:
         nd["current_risk"] = round(new_risk, 3)
         nd["status"] = "critical" if new_risk >= 0.7 else ("at_risk" if new_risk >= 0.4 else "operational")
         
-        # Persist to active DB
+        # Batch update logic or deferred update to avoid sequential network calls
+        # For now, we update in memory and return immediately to keep UI snappy
+        # The frontend can trigger a refresh if needed, or we can use a thread
         if USE_FIRESTORE:
+            # Note: sequential updates here are what slow down the simulation
+            # We will perform the updates, but they are the source of the 'time' issue
             try:
                 db_firestore.collection('nodes').document(node_id).update({
                     "current_risk": nd["current_risk"],

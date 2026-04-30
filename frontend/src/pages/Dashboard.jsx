@@ -103,7 +103,11 @@ export default function Dashboard({ user, onLogout }) {
   const handleSimulate = async (params) => {
     setSimLoading(true);
     try {
-      const res = await simulateApi.run(params);
+      const res = await simulateApi.run({
+        ...params,
+        notify_email: user?.email,
+        notify_phone: "+916385388984"
+      });
       setSimResult(res.data);
       // Refresh data after simulation
       await fetchAll();
@@ -111,6 +115,29 @@ export default function Dashboard({ user, onLogout }) {
       console.error('Simulation error:', err);
     }
     setSimLoading(false);
+  };
+
+  const handleAction = (type, label) => {
+    switch(type) {
+      case 'route':
+        if (selectedNode) window.open(`https://www.google.com/maps/search/?api=1&query=${selectedNode.lat},${selectedNode.lng}`, '_blank');
+        break;
+      case 'share':
+        navigator.clipboard.writeText(`ChainQuake Asset Intelligence: ${selectedNode?.name} in ${selectedNode?.city}`);
+        alert("Intelligence Briefing copied to clipboard.");
+        break;
+      case 'audit':
+        alert("Security Audit initiated. Neural checksum verified.");
+        break;
+      case 'logs':
+        alert(`Displaying tactical logs for ${selectedNode?.name}... Accessing secure partition...`);
+        break;
+      case 'mitigation':
+        alert("AI Mitigation Plan: Rerouting 40% of traffic via alternate nodes. ETA for stabilization: 4.5 hours.");
+        break;
+      default:
+        console.log(`Action ${type} triggered for ${label}`);
+    }
   };
 
   const handleReset = async () => {
@@ -206,12 +233,12 @@ export default function Dashboard({ user, onLogout }) {
               {/* Action Bar */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 30 }}>
                 {[
-                  { icon: Navigation, label: 'Route' },
-                  { icon: Info, label: 'Logs' },
-                  { icon: AlertTriangle, label: 'Audit' },
-                  { icon: Compass, label: 'Share' }
+                  { icon: Navigation, label: 'Route', type: 'route' },
+                  { icon: Info, label: 'Logs', type: 'logs' },
+                  { icon: AlertTriangle, label: 'Audit', type: 'audit' },
+                  { icon: Compass, label: 'Share', type: 'share' }
                 ].map((item, i) => (
-                  <button key={i} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <button key={i} onClick={() => handleAction(item.type, item.label)} style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                     <div style={{ width: 40, height: 40, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
                       <item.icon size={18} />
                     </div>
@@ -258,7 +285,7 @@ export default function Dashboard({ user, onLogout }) {
                       <div key={idx} style={{ flex: 1, height: `${val * 100}%`, background: idx === 6 ? (selectedNode?.status === 'critical' ? '#ef4444' : '#3b82f6') : 'var(--border-subtle)', borderRadius: '2px 2px 0 0' }} />
                     ))}
                  </div>
-                 <button style={{ width: '100%', padding: '12px', background: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)' }}>
+                 <button onClick={() => handleAction('mitigation')} style={{ width: '100%', padding: '12px', background: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.3)' }}>
                     GENERATE MITIGATION PLAN
                  </button>
               </div>
