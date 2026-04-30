@@ -1,44 +1,46 @@
-from fastapi import APIRouter, BackgroundTasks
+"""
+Simulation API - Trigger and manage network disruption events
+"""
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
+import logging
 
 router = APIRouter()
+logger = logging.getLogger("ChainQuake.Simulation")
 
 class SimulationRequest(BaseModel):
     event_type: Optional[str] = None
-    location: Optional[str] = None
+    location: Optional[str] = "Chennai"
     custom_event: Optional[str] = None
     notify_email: Optional[str] = None
     notify_phone: Optional[str] = None
 
 def _dispatch_notifications(notify_email, notify_phone, event_name, affected_nodes):
-    import sys
-    print(f"\n[!!!] MISSION DISPATCH STARTED: {event_name}", flush=True)
+    """Background task for multi-source alerting"""
     from backend.services.notification_service import notification_service
     
+    logger.info(f"🚀 MISSION DISPATCH: Processing alerts for {event_name}")
+    
     critical_count = sum(1 for n in affected_nodes if n['status'] == 'critical')
-    msg = f"CHAINQUAKE ALERT: {event_name}. {critical_count} nodes critical, {len(affected_nodes)} total affected nodes in Tamil Nadu."
+    msg = f"CHAINQUAKE ALERT: {event_name}. {critical_count} nodes critical, {len(affected_nodes)} total affected nodes."
     
     if notify_email:
-        print(f"📡 DISPATCHING EMAIL to {notify_email}...", flush=True)
         res = notification_service.send_email_alert(
             to_email=notify_email,
             subject=f"DISRUPTION: {event_name}",
             body=msg,
-            alert_data={"severity": "critical", "company_id": affected_nodes[0]['name'] if affected_nodes else "N/A"}
+            alert_data={"severity": "critical"}
         )
-        print(f"📡 EMAIL RESULT: {res}", flush=True)
+        logger.info(f"📡 EMAIL DISPATCH RESULT: {'SUCCESS' if res else 'FAILED'}")
     
     if notify_phone:
-        print(f"📞 DISPATCHING VOICE to {notify_phone}...", flush=True)
         res = notification_service.make_phone_call(
             to_phone=notify_phone,
             message=msg,
             alert_data={"severity": "critical"}
         )
-        print(f"📞 VOICE RESULT: {res}", flush=True)
-    
-    print("✅ MISSION DISPATCH COMPLETED.\n", flush=True)
+        logger.info(f"📞 VOICE DISPATCH RESULT: {'SUCCESS' if res else 'FAILED'}")
 
 @router.post("")
 async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTasks):
@@ -46,25 +48,24 @@ async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTas
     from backend.services.simulation_engine import simulation_engine
     from backend.api.alerts import add_alert
 
-    # 1. Run core simulation logic (In-memory)
+    logger.info(f"🛠️ SIMULATION START: {req.event_type or req.custom_event}")
+    
     result = simulation_engine.run_disruption(
-        graph_engine, event_type=req.event_type,
-        location=req.location, custom_event=req.custom_event
+        graph_engine, 
+        event_type=req.event_type, 
+        location=req.location,
+        custom_event=req.custom_event
     )
     
     affected_nodes = result.get("affected_nodes", [])
     
-    # 2. Add alerts to store (In-memory)
+    # 1. Update Alert Store
     for node in affected_nodes:
-        if node["status"] == "critical":
-            add_alert("critical", f"SIMULATION: {node['name']} risk at {node['risk_score']*100:.0f}%", node["id"])
-        elif node["status"] == "at_risk":
-            add_alert("high", f"SIMULATION: {node['name']} showing elevated risk", node["id"])
+        severity = "critical" if node["status"] == "critical" else "high"
+        add_alert(severity, f"SIMULATION: {node['name']} impacted", node["id"])
 
-    # 3. Aggressive Notification Trigger
-    # Fire if there's any disruption OR if it's a custom event
+    # 2. Trigger Notifications (Aggressive)
     if affected_nodes or req.custom_event:
-        print(f"!!! ALERT TRIGGERED !!! Nodes affected: {len(affected_nodes)}. Sending to: {req.notify_email} / {req.notify_phone}")
         background_tasks.add_task(
             _dispatch_notifications, 
             req.notify_email, 
@@ -72,38 +73,29 @@ async def run_simulation(req: SimulationRequest, background_tasks: BackgroundTas
             result['event'], 
             affected_nodes
         )
-    else:
-        print("SIMULATION: No nodes affected. Skipping automatic notifications.")
 
-    # 4. Broadcast update (WS)
+    # 3. WebSocket Broadcast
     from backend.main import manager
-    await manager.broadcast({"type": "SIMULATION_UPDATE", "event": req.event_type})
-
-    # Return result immediately!
+    await manager.broadcast({"type": "REFRESH_ALL"})
+    
     return result
 
 @router.post("/reset")
-async def reset_simulation(background_tasks: BackgroundTasks):
+async def reset_simulation():
     from backend.services.graph_engine import graph_engine
     from backend.main import manager
     
-    # Reset in-memory immediately
     graph_engine.reset_risks()
-    
-    # Notify clients
     await manager.broadcast({"type": "REFRESH_ALL"})
-    
     return {"status": "reset", "health": graph_engine.get_health()}
 
 @router.post("/test_notify")
 async def test_notification(req: SimulationRequest, background_tasks: BackgroundTasks):
-    """Direct endpoint to test notifications without a simulation"""
-    from backend.services.graph_engine import graph_engine
+    """Manual gateway test"""
+    logger.info(f"🧪 MANUAL TEST DISPATCH: Target {req.notify_email}")
     
-    mock_node = list(graph_engine.graph.nodes(data=True))[0]
-    affected = [{"id": mock_node[0], "name": mock_node[1].get('name', 'TEST ASSET'), "status": "critical"}]
-    
-    print(f"DEBUG: Manual Test Dispatch initiated to {req.notify_email}")
+    # Mock data for test
+    affected = [{"id": "test", "name": "SYSTEM GATEWAY", "status": "critical"}]
     
     background_tasks.add_task(
         _dispatch_notifications, 
@@ -112,4 +104,4 @@ async def test_notification(req: SimulationRequest, background_tasks: Background
         "MANUAL SYSTEM TEST", 
         affected
     )
-    return {"status": "dispatched", "target": req.notify_email}
+    return {"status": "dispatched"}

@@ -1,10 +1,12 @@
 """
 ChainQuake - Autonomous Supply Chain Intelligence Platform
-Main FastAPI Application with Real-Time WebSocket Support
+Main FastAPI Application - Production Ready v1.2.0
 """
 import os
 import json
 import asyncio
+import logging
+import sys
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,19 +14,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from backend.api import companies, dependencies, alerts, risk, simulate, news, chat, auth
 
-app = FastAPI(title="ChainQuake API", version="1.2.0", description="Autonomous Intelligence & Real-Time Orchestration")
+# Production Logging Configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+    stream=sys.stdout
+)
+logger = logging.getLogger("ChainQuake")
 
-# Database Initialization on Startup
-@app.on_event("startup")
-async def startup_event():
-    print("CHAINQUAKE: System operational. Real-time intelligence engine active.", flush=True)
-    # Background Heartbeat for Render Log verification
-    async def heartbeat():
-        import sys
-        while True:
-            await asyncio.sleep(60)
-            print("💓 NEURAL LINK ACTIVE: System checking for disruptions...", flush=True)
-    asyncio.create_task(heartbeat())
+app = FastAPI(
+    title="ChainQuake API", 
+    version="1.2.0", 
+    description="Autonomous Intelligence & Real-Time Orchestration"
+)
 
 # CORS
 app.add_middleware(
@@ -35,7 +37,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# WebSocket Connection Manager for Real-Time Intelligence
+# Startup Tasks
+@app.on_event("startup")
+async def startup_event():
+    logger.info("⚡ CHAINQUAKE CORE: System operational. Initializing Neural Link...")
+    
+    # Subtle Health Heartbeat
+    async def heartbeat():
+        while True:
+            await asyncio.sleep(300) # Every 5 minutes
+            logger.info("💓 HEARTBEAT: Neural Link Active. All sectors nominal.")
+    
+    asyncio.create_task(heartbeat())
+
+# WebSocket Connection Manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -45,7 +60,8 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
         for connection in self.active_connections:
@@ -61,9 +77,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # Heartbeat or client-side pings
-            data = await websocket.receive_text()
-            # Handle incoming WS messages if needed
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -82,7 +96,7 @@ async def health():
     from backend.services.graph_engine import graph_engine
     return {"status": "healthy", "network": graph_engine.get_health()}
 
-# Serve Frontend
+# Static File Serving
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIST = os.path.join(BASE_DIR, "frontend", "dist")
 
@@ -93,15 +107,15 @@ if os.path.exists(FRONTEND_DIST):
 
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
-        if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
-            return JSONResponse({"error": f"API endpoint {full_path} not found"}, 404)
+        if full_path.startswith("api") or full_path.startswith("docs"):
+            return JSONResponse({"error": "Resource not found"}, 404)
+        
         file_path = os.path.join(FRONTEND_DIST, full_path)
         if full_path and os.path.isfile(file_path):
             return FileResponse(file_path)
+            
         index = os.path.join(FRONTEND_DIST, "index.html")
-        if os.path.exists(index):
-            return FileResponse(index)
-        return JSONResponse({"error": "Frontend build required."}, 404)
+        return FileResponse(index)
 else:
     @app.get("/")
     async def root():

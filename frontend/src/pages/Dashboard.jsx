@@ -1,385 +1,563 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Navbar from '../components/Navbar';
-import KPICards from '../components/KPICards';
-import SupplyChainGraph from '../components/SupplyChainGraph';
+import { 
+  Shield, Activity, AlertCircle, RefreshCw, LogOut, 
+  Settings, User, Map as MapIcon, Database, Terminal,
+  Zap, Globe, ChevronRight, BarChart3, Bell
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import NetworkMap from '../components/NetworkMap';
+import Sidebar from '../components/Sidebar';
 import AlertsPanel from '../components/AlertsPanel';
-import NewsFeed from '../components/NewsFeed';
-import AIInsightsPanel from '../components/AIInsightsPanel';
+import NodeDetail from '../components/NodeDetail';
 import SimulationPanel from '../components/SimulationPanel';
 import ChatCommander from '../components/ChatCommander';
-import { riskApi, alertsApi, newsApi, simulateApi } from '../services/api';
-import { Navigation, Compass, Info, AlertTriangle } from 'lucide-react';
+import { companiesApi, simulateApi } from '../services/api';
 
 export default function Dashboard({ user, onLogout }) {
-  const [theme, setTheme] = useState('dark');
-  const [graphData, setGraphData] = useState({ nodes: [], links: [] });
-  const [filteredGraphData, setFilteredGraphData] = useState({ nodes: [], links: [] });
-  const [health, setHealth] = useState({});
-  const [insights, setInsights] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [news, setNews] = useState([]);
+  const [nodes, setNodes] = useState([]);
+  const [links, setLinks] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
   const [simResult, setSimResult] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [simLoading, setSimLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('intelligence');
 
-  const fetchAll = useCallback(async () => {
+  const loadData = useCallback(async (isSilent = false) => {
+    if(!isSilent) setLoading(true);
     try {
-      const [riskRes, alertsRes, newsRes] = await Promise.all([
-        riskApi.getData().catch(() => ({ data: {} })),
-        alertsApi.getAll().catch(() => ({ data: [] })),
-        newsApi.getAll().catch(() => ({ data: [] })),
-      ]);
-      if (riskRes.data.graph) {
-        setGraphData(riskRes.data.graph);
-        setFilteredGraphData(riskRes.data.graph);
-      }
-      if (riskRes.data.health) setHealth(riskRes.data.health);
-      if (riskRes.data.insights) setInsights(riskRes.data.insights);
-      setAlerts(Array.isArray(alertsRes.data) ? alertsRes.data : []);
-      setNews(Array.isArray(newsRes.data) ? newsRes.data : []);
-    } catch (err) {
-      console.error('Fetch error:', err);
+      const res = await companiesApi.getAll();
+      setNodes(res.data.nodes || []);
+      setLinks(res.data.links || []);
+    } catch (e) {
+      toast.error("Failed to synchronize network data.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // WebSocket for Real-Time Intelligence
   useEffect(() => {
-    let socket;
-    const connectWS = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host === 'localhost:5173' ? 'localhost:8000' : window.location.host}/ws/intelligence`;
-      
-      socket = new WebSocket(wsUrl);
-      
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("Tactical Intelligence Received:", data);
-        if (data.type === "REFRESH_ALL" || data.type === "SIMULATION_UPDATE" || data.type === "NEWS_UPDATE") {
-          fetchAll();
-        }
-      };
-
-      socket.onclose = () => {
-        console.log("Neural Link Severed. Retrying in 5s...");
-        setTimeout(connectWS, 5000);
-      };
+    loadData();
+    const ws = new WebSocket(`wss://${window.location.host}/ws/intelligence`);
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'REFRESH_ALL') loadData(true);
     };
-
-    connectWS();
-    return () => socket?.close();
-  }, [fetchAll]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  // Reduced polling frequency since WebSockets are active
-  useEffect(() => {
-    const interval = setInterval(fetchAll, 60000);
-    return () => clearInterval(interval);
-  }, [fetchAll]);
-
-  const handleSearch = (term) => {
-    if (!term) {
-      setFilteredGraphData(graphData);
-      return;
-    }
-    const lower = term.toLowerCase();
-    const filteredNodes = graphData.nodes.filter(n => 
-      n.name.toLowerCase().includes(lower) || 
-      n.city.toLowerCase().includes(lower) ||
-      n.sector.toLowerCase().includes(lower)
-    );
-    // Keep links that connect filtered nodes
-    const nodeIds = new Set(filteredNodes.map(n => n.id));
-    const filteredLinks = graphData.links.filter(l => 
-      nodeIds.has(l.source.id || l.source) || nodeIds.has(l.target.id || l.target)
-    );
-    setFilteredGraphData({ nodes: filteredNodes, links: filteredLinks });
-  };
+    return () => ws.close();
+  }, [loadData]);
 
   const handleSimulate = async (params) => {
     setSimLoading(true);
+    const toastId = toast.loading("Simulating Network Disruption...");
     try {
       const res = await simulateApi.run({
         ...params,
         notify_email: user?.email,
         notify_phone: "+916385388984"
       });
+      setSimResult(res.data);
       
-      // Update local state instantly from simulation result
+      // OPTIMIZATION: Instant state hydration
       if (res.data.affected_nodes) {
-        setSimResult(res.data);
-        // We can update the graph data locally here if we want absolute instant
-        // but fetchAll is still good for consistency. 
-        // We'll call fetchAll in the background without awaiting it.
-        fetchAll(); 
+        const affectedMap = new Map(res.data.affected_nodes.map(n => [n.id, n]));
+        setNodes(prev => prev.map(node => {
+          const update = affectedMap.get(node.id);
+          return update ? { ...node, ...update } : node;
+        }));
       }
-    } catch (err) {
-      console.error('Simulation error:', err);
-    }
-    setSimLoading(false);
-  };
-
-  const handleAction = (type, label) => {
-    switch(type) {
-      case 'route':
-        if (selectedNode) window.open(`https://www.google.com/maps/search/?api=1&query=${selectedNode.lat},${selectedNode.lng}`, '_blank');
-        break;
-      case 'share':
-        navigator.clipboard.writeText(`ChainQuake Asset Intelligence: ${selectedNode?.name} in ${selectedNode?.city}`);
-        alert("Intelligence Briefing copied to clipboard.");
-        break;
-      case 'audit':
-        alert("Security Audit initiated. Neural checksum verified.");
-        break;
-      case 'logs':
-        alert(`Displaying tactical logs for ${selectedNode?.name}... Accessing secure partition...`);
-        break;
-      case 'mitigation':
-        alert("AI Mitigation Plan: Rerouting 40% of traffic via alternate nodes. ETA for stabilization: 4.5 hours.");
-        break;
-      default:
-        console.log(`Action ${type} triggered for ${label}`);
+      toast.success("Simulation Complete. Notifications Dispatched.", { id: toastId });
+    } catch (e) {
+      toast.error("Simulation sequence failed.", { id: toastId });
+    } finally {
+      setSimLoading(false);
     }
   };
 
   const handleReset = async () => {
+    const toastId = toast.loading("Restoring Network Health...");
     try {
       await simulateApi.reset();
       setSimResult(null);
-      await fetchAll();
-    } catch (err) {
-      console.error('Reset error:', err);
+      await loadData(true);
+      toast.success("Network Equilibrium Restored.", { id: toastId });
+    } catch (e) {
+      toast.error("Restoration failed.", { id: toastId });
     }
   };
 
+  const networkHealth = Math.round(nodes.length > 0 
+    ? (nodes.filter(n => n.status === 'healthy').length / nodes.length) * 100 
+    : 100
+  );
+
+  if (loading) return (
+    <div className="dashboard-loading">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="loading-content"
+      >
+        <Zap size={48} className="spin-slow" color="#7c3aed" />
+        <p>DECRYPTING NETWORK LAYER...</p>
+      </motion.div>
+    </div>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-obsidian)' }}>
-      {/* Tactical Loading Overlay */}
-      {(!graphData.nodes.length || simLoading) && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(5,5,5,0.8)', 
-          backdropFilter: 'blur(20px)', zIndex: 9999, display: 'flex', 
-          flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20
-        }}>
-          <div className="neural-loader"></div>
-          <div style={{ color: 'var(--accent-blue)', fontSize: 14, fontWeight: 900, letterSpacing: 4, animation: 'pulse 2s infinite' }}>
-            SYNCING NEURAL NETWORK...
+    <div className="dashboard-root">
+      {/* Tactical Top Bar */}
+      <nav className="tactical-nav">
+        <div className="nav-brand">
+          <Shield size={24} color="#7c3aed" fill="#7c3aed" />
+          <span className="brand-text">CHAINQUAKE <span className="v-tag">v1.2.0</span></span>
+        </div>
+
+        <div className="nav-stats">
+          <div className="stat-item">
+            <div className="stat-label">NETWORK HEALTH</div>
+            <div className={`stat-value ${networkHealth < 50 ? 'critical' : 'optimal'}`}>
+              {networkHealth}%
+            </div>
+            <div className="health-bar-bg">
+               <motion.div 
+                 initial={{ width: 0 }}
+                 animate={{ width: `${networkHealth}%` }}
+                 className="health-bar-fill"
+               />
+            </div>
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 700 }}>
-            {simLoading ? 'EXECUTING CASSETTE PROPAGATION' : 'ESTABLISHING TACTICAL UPLINK'}
+          <div className="divider" />
+          <div className="stat-item">
+            <div className="stat-label">OPERATOR</div>
+            <div className="stat-value small">{user?.displayName}</div>
           </div>
         </div>
-      )}
-      <Navbar 
-        user={user} 
-        onLogout={onLogout} 
-        onSearch={handleSearch}
-        theme={theme}
-        setTheme={setTheme}
-      />
 
-      <main style={{ flex: 1, padding: '0 24px 24px', maxWidth: 1600, margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* KPI Row */}
-        <KPICards health={health} />
-
-        {/* Main Content Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '20px', minHeight: 600 }}>
-          {/* Left: Graph */}
-          <div className="grit-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <SupplyChainGraph 
-              graphData={filteredGraphData} 
-              onNodeSelect={setSelectedNode} 
-              selectedNode={selectedNode}
-              theme={theme} 
-            />
+        <div className="nav-actions">
+          <button className="icon-btn" title="Settings"><Settings size={18} /></button>
+          <button className="icon-btn" title="Intelligence Alerts"><Bell size={18} /></button>
+          <div className="user-profile">
+             <div className="avatar">{user?.displayName?.[0]}</div>
+             <button onClick={onLogout} className="logout-btn"><LogOut size={16} /></button>
           </div>
+        </div>
+      </nav>
 
-          {/* Right: Simulation + Alerts */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div className="grit-card" style={{ padding: 24 }}>
-              <SimulationPanel
-                onSimulate={handleSimulate} onReset={handleReset}
-                simResult={simResult} loading={simLoading}
-                userEmail={user?.email}
+      <div className="dashboard-main">
+        {/* Left Sidebar - Tactical Intelligence */}
+        <aside className="left-sidebar">
+          <div className="sidebar-header">
+            <div className="header-title"><Activity size={16} /> OPERATIONS</div>
+          </div>
+          <div className="sidebar-tabs">
+            <button 
+              className={`tab ${activeTab === 'intelligence' ? 'active' : ''}`}
+              onClick={() => setActiveTab('intelligence')}
+            >
+              INTELLIGENCE
+            </button>
+            <button 
+              className={`tab ${activeTab === 'alerts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('alerts')}
+            >
+              ALERTS
+            </button>
+          </div>
+          
+          <div className="sidebar-content-scroll">
+            <AnimatePresence mode="wait">
+              {activeTab === 'intelligence' ? (
+                <motion.div 
+                  key="intel"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <SimulationPanel 
+                    onSimulate={handleSimulate} 
+                    onReset={handleReset} 
+                    simResult={simResult} 
+                    loading={simLoading}
+                    userEmail={user?.email}
+                  />
+                  <div style={{ marginTop: 24 }}>
+                    <ChatCommander />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="alerts"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <AlertsPanel />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </aside>
+
+        {/* Center - Geospatial Intelligence */}
+        <main className="map-container">
+           <NetworkMap 
+             nodes={nodes} 
+             links={links} 
+             onNodeSelect={setSelectedNode} 
+             selectedNode={selectedNode}
+           />
+           
+           <div className="map-overlay-bottom">
+              <div className="legend">
+                 <div className="legend-item"><span className="dot healthy"></span> HEALTHY</div>
+                 <div className="legend-item"><span className="dot at_risk"></span> AT RISK</div>
+                 <div className="legend-item"><span className="dot critical"></span> CRITICAL</div>
+              </div>
+              <div className="map-status">
+                 <Globe size={14} /> TAMIL NADU SECTOR ACTIVE
+              </div>
+           </div>
+        </main>
+
+        {/* Right Sidebar - Node Analytics (Dynamic) */}
+        <AnimatePresence>
+          {selectedNode && (
+            <motion.aside 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="right-sidebar"
+            >
+              <NodeDetail 
+                node={selectedNode} 
+                onClose={() => setSelectedNode(null)} 
               />
-            </div>
-            <div className="grit-card" style={{ padding: 24, flex: 1, minHeight: 300 }}>
-              <AlertsPanel alerts={alerts} />
-            </div>
-          </div>
-        </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
 
-        {/* Bottom Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
-          <div className="grit-card" style={{ padding: 24 }}>
-            <AIInsightsPanel insights={insights} />
-          </div>
-          <div className="grit-card" style={{ padding: 24 }}>
-            <NewsFeed news={news} />
-          </div>
-        </div>
+      <style jsx>{`
+        .dashboard-root {
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background: #050505;
+          color: #fff;
+          font-family: 'Outfit', sans-serif;
+          overflow: hidden;
+        }
 
-        {/* Node Detail Intelligence Sidebar (RIGHT SIDE) */}
-        {selectedNode && (
-          <div className="grit-card animate-fade-in" style={{
-            position: 'fixed', top: 100, right: 24, width: 440, 
-            height: 'calc(100vh - 124px)', zIndex: 2000, 
-            padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-            background: 'var(--bg-surface)', border: '2px solid var(--accent-purple)',
-            boxShadow: '-20px 0 80px rgba(0,0,0,0.5)',
-            borderRadius: '24px'
-          }}>
-            {/* Header */}
-            <div style={{ 
-              height: 180, 
-              background: `linear-gradient(135deg, ${selectedNode?.status === 'critical' ? '#450a0a' : '#1e1b4b'} 0%, var(--bg-obsidian) 100%)`, 
-              position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderBottom: '1px solid rgba(255,255,255,0.05)'
-            }}>
-              <button 
-                onClick={() => setSelectedNode(null)} 
-                style={{ 
-                  position: 'absolute', top: 20, right: 20, background: 'rgba(0,0,0,0.4)', 
-                  border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: 32, height: 32, 
-                  borderRadius: '50%', cursor: 'pointer', zIndex: 10, display: 'flex', 
-                  alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 300 
-                }}
-              >
-                ×
-              </button>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ 
-                  width: 70, height: 70, background: 'rgba(255,255,255,0.03)', 
-                  borderRadius: '50%', display: 'flex', alignItems: 'center', 
-                  justifyContent: 'center', margin: '0 auto 12px', border: '1px solid rgba(255,255,255,0.08)' 
-                }}>
-                   <Compass size={32} color={selectedNode?.status === 'critical' ? '#ef4444' : '#818cf8'} />
-                </div>
-                <div style={{ 
-                  fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 800, 
-                  textTransform: 'uppercase', letterSpacing: 3 
-                }}>
-                  {`ID: TN-${selectedNode?.id?.toString().padStart(4, '0') || '0000'}`}
-                </div>
-              </div>
-            </div>
+        .tactical-nav {
+          height: 70px;
+          border-bottom: 1px solid #1a1a1a;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 24px;
+          background: rgba(10, 10, 10, 0.8);
+          backdrop-filter: blur(20px);
+          z-index: 100;
+        }
 
-            <div style={{ padding: '32px', flex: 1, overflowY: 'auto', color: 'var(--text-primary)', scrollbarWidth: 'none' }}>
-              <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 28, fontWeight: 950, color: '#fff', marginBottom: 8, lineHeight: 1.1, letterSpacing: '-0.5px' }}>
-                  {selectedNode?.name || 'Unknown Asset'}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ 
-                    background: selectedNode?.status === 'critical' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.1)', 
-                    border: `1px solid ${selectedNode?.status === 'critical' ? '#ef4444' : '#10b981'}`,
-                    padding: '4px 12px', borderRadius: 20, fontSize: 10, fontWeight: 900, 
-                    color: selectedNode?.status === 'critical' ? '#ef4444' : '#10b981',
-                    textTransform: 'uppercase'
-                  }}>
-                    {selectedNode?.status || 'UNKNOWN'}
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: 600 }}>
-                    {selectedNode?.city || 'Tamil Nadu'}, IN
-                  </div>
-                </div>
-              </div>
+        .nav-brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
 
-              {/* Action Bar */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 40 }}>
-                {[
-                  { icon: Navigation, label: 'Route', type: 'route' },
-                  { icon: Info, label: 'Logs', type: 'logs' },
-                  { icon: AlertTriangle, label: 'Audit', type: 'audit' },
-                  { icon: Compass, label: 'Share', type: 'share' }
-                ].map((item, i) => (
-                  <button 
-                    key={i} onClick={() => handleAction(item.type, item.label)} 
-                    style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-                  >
-                    <div style={{ 
-                      width: 44, height: 44, borderRadius: 12, 
-                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8',
-                      transition: 'all 0.2s'
-                    }}>
-                      <item.icon size={20} />
-                    </div>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 800 }}>{item.label}</span>
-                  </button>
-                ))}
-              </div>
+        .brand-text {
+          font-weight: 950;
+          font-size: 20px;
+          letter-spacing: 4px;
+          background: linear-gradient(135deg, #fff 0%, #888 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-                <div>
-                  <h4 style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: 16, letterSpacing: 2 }}>ASSET DOSSIER</h4>
-                  <div style={{ 
-                    fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, 
-                    padding: 20, background: 'rgba(255,255,255,0.02)', 
-                    borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' 
-                  }}>
-                    {selectedNode?.description || "Strategic intelligence monitoring active. Autonomous asset verification in progress."}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: 20, letterSpacing: 2 }}>ASSET INTELLIGENCE</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {[
-                      { label: 'Operational Sector', value: selectedNode?.sector, icon: '🏭' },
-                      { label: 'Supply Tier', value: selectedNode?.type, icon: '📦' },
-                      { label: 'Coordinates', value: `${selectedNode?.lat?.toFixed(4) || 0}, ${selectedNode?.lng?.toFixed(4) || 0}`, icon: '📍' },
-                      { label: 'Base Risk Profile', value: `${((selectedNode?.base_risk || 0) * 100).toFixed(1)}%`, icon: '📊' }
-                    ].map((info, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                        <div style={{ 
-                          width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.03)', 
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 
-                        }}>
-                          {info.icon}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>{info.label}</div>
-                          <div style={{ fontSize: 15, color: '#fff', fontWeight: 600 }}>{info.value || 'N/A'}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        .v-tag {
+          font-size: 9px;
+          vertical-align: middle;
+          background: rgba(124, 58, 237, 0.2);
+          color: #7c3aed;
+          padding: 2px 6px;
+          border-radius: 4px;
+          margin-left: 8px;
+        }
 
-                <div style={{ padding: 24, background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, transparent 100%)', borderRadius: 20, border: '1px solid rgba(124, 58, 237, 0.1)' }}>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', letterSpacing: 1 }}>RISK TRAJECTORY</span>
-                      <span style={{ fontSize: 12, fontWeight: 950, color: (selectedNode?.current_risk || 0) > 0.6 ? '#ef4444' : '#3b82f6' }}>
-                        {((selectedNode?.current_risk || 0) * 100).toFixed(1)}%
-                      </span>
-                   </div>
-                   <div style={{ height: 60, display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 24 }}>
-                      {[0.2, 0.4, 0.3, 0.5, 0.4, 0.6, (selectedNode?.current_risk || 0)].map((val, idx) => (
-                        <div key={idx} style={{ flex: 1, height: `${Math.max(10, val * 100)}%`, background: idx === 6 ? (selectedNode?.status === 'critical' ? '#ef4444' : '#818cf8') : 'rgba(255,255,255,0.05)', borderRadius: '4px 4px 2px 2px' }} />
-                      ))}
-                   </div>
-                   <button onClick={() => handleAction('mitigation')} style={{ 
-                     width: '100%', padding: '16px', background: 'linear-gradient(135deg, #7c3aed, #3b82f6)', 
-                     color: 'white', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 900, 
-                     cursor: 'pointer', boxShadow: '0 8px 25px rgba(124, 58, 237, 0.3)',
-                     letterSpacing: 1
-                   }}>
-                      GENERATE MITIGATION PLAN
-                   </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+        .nav-stats {
+          display: flex;
+          align-items: center;
+          gap: 32px;
+          background: rgba(255,255,255,0.03);
+          padding: 10px 24px;
+          border-radius: 16px;
+          border: 1px solid rgba(255,255,255,0.05);
+        }
 
-      {/* Chat Commander */}
-      <ChatCommander />
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .stat-label {
+          font-size: 9px;
+          font-weight: 900;
+          color: #555;
+          letter-spacing: 1px;
+        }
+
+        .stat-value {
+          font-size: 18px;
+          font-weight: 900;
+        }
+
+        .stat-value.optimal { color: #10b981; }
+        .stat-value.critical { color: #ef4444; }
+        .stat-value.small { font-size: 14px; color: #aaa; }
+
+        .health-bar-bg {
+          width: 100px;
+          height: 3px;
+          background: rgba(255,255,255,0.1);
+          border-radius: 2px;
+          overflow: hidden;
+        }
+
+        .health-bar-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #7c3aed, #3b82f6);
+        }
+
+        .dashboard-main {
+          flex: 1;
+          display: flex;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .left-sidebar {
+          width: 400px;
+          border-right: 1px solid #1a1a1a;
+          display: flex;
+          flex-direction: column;
+          background: #080808;
+        }
+
+        .sidebar-header {
+          padding: 24px;
+          border-bottom: 1px solid #1a1a1a;
+        }
+
+        .header-title {
+          font-size: 11px;
+          font-weight: 900;
+          color: #888;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          letter-spacing: 2px;
+        }
+
+        .sidebar-tabs {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          padding: 8px;
+          background: #000;
+          margin: 16px;
+          border-radius: 12px;
+        }
+
+        .tab {
+          padding: 10px;
+          border: none;
+          background: none;
+          color: #555;
+          font-size: 11px;
+          font-weight: 900;
+          cursor: pointer;
+          border-radius: 8px;
+          transition: all 0.3s;
+        }
+
+        .tab.active {
+          background: #111;
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .sidebar-content-scroll {
+          flex: 1;
+          overflow-y: auto;
+          padding: 0 24px 24px;
+        }
+
+        .map-container {
+          flex: 1;
+          position: relative;
+          background: #000;
+        }
+
+        .map-overlay-bottom {
+          position: absolute;
+          bottom: 24px;
+          left: 24px;
+          right: 24px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          pointer-events: none;
+        }
+
+        .legend {
+          background: rgba(0,0,0,0.8);
+          backdrop-filter: blur(10px);
+          padding: 12px 20px;
+          border-radius: 14px;
+          border: 1px solid #222;
+          display: flex;
+          gap: 20px;
+          pointer-events: auto;
+        }
+
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 10px;
+          font-weight: 900;
+          color: #aaa;
+        }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.healthy { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .dot.at_risk { background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+        .dot.critical { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+
+        .map-status {
+          background: rgba(124, 58, 237, 0.1);
+          color: #7c3aed;
+          padding: 8px 16px;
+          border-radius: 12px;
+          font-size: 10px;
+          font-weight: 900;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid rgba(124, 58, 237, 0.2);
+        }
+
+        .right-sidebar {
+          position: absolute;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          width: 450px;
+          background: #0a0a0a;
+          border-left: 1px solid #1a1a1a;
+          z-index: 50;
+          box-shadow: -20px 0 60px rgba(0,0,0,0.8);
+        }
+
+        .icon-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          border: 1px solid #222;
+          background: #000;
+          color: #555;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .icon-btn:hover {
+          color: #fff;
+          border-color: #444;
+          background: #111;
+        }
+
+        .user-profile {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding-left: 12px;
+          border-left: 1px solid #1a1a1a;
+        }
+
+        .avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: #7c3aed;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 900;
+          font-size: 14px;
+        }
+
+        .logout-btn {
+          background: none;
+          border: none;
+          color: #555;
+          cursor: pointer;
+          transition: color 0.3s;
+        }
+
+        .logout-btn:hover { color: #ef4444; }
+
+        .dashboard-loading {
+          height: 100vh;
+          background: #050505;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .loading-content {
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 24px;
+        }
+
+        .loading-content p {
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 4px;
+          color: #7c3aed;
+        }
+
+        .spin-slow {
+          animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        ::-webkit-scrollbar {
+          width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #000;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #222;
+          border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #333;
+        }
+      `}</style>
     </div>
   );
 }
